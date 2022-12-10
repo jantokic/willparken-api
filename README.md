@@ -13,7 +13,7 @@ Mitarbeiter:
 * Tokic Jan
 
 Betreuer:
-* Proj. Winkler Joseph
+* Prof. Winkler Joseph
 
 
 <br>

@@ -1,3 +1,5 @@
+//Source: https://mongoosejs.com/docs/subdocs.html#altsyntax
+
 const mongoose = require('mongoose')
 
 
@@ -26,7 +28,7 @@ const addressSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    a_zipcode: {
+    a_zip: {
         type: String,
         required: true
     },
@@ -42,6 +44,11 @@ const addressSchema = new mongoose.Schema({
 
 
 const parkingspotSchema = new mongoose.Schema({
+    p_number: {
+        type: Number,
+        required: true,
+        unique: true
+    },
     p_availablefrom: {
         type: String,
         required: true

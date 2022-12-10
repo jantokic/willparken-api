@@ -26,5 +26,6 @@ app.use(express.json())
 const usersRouter = require('./routes/users')
 app.use('/users', usersRouter)
 
+
 app.listen(process.env.API_PORT, () => console.log('Server Started.'))
 

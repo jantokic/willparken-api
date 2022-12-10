@@ -1,2 +1,5 @@
 Genereller Aufbau und Grundfunktionalität:
 https://www.youtube.com/watch?v=fgTGADljAeg&list=WL&index=7
+
+Mongoose Schema Doku:
+https://mongoosejs.com/docs/subdocs.html#altsyntax

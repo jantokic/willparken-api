@@ -3,8 +3,26 @@
 GET http://localhost:3000/users
 
 ###
+#Alle User returnen
+GET http://localhost:3000/users/parkingspots
+
+###
 #User mit bestimmter ID returnen
-GET http://localhost:3000/users/638b3e448e0b1f807983dbc4
+GET http://localhost:3000/users/6394c71c516627872de28e0a
+
+###
+#User mit bestimmter ID returnen
+GET http://localhost:3000/users/6394c71c516627872de28e0a/parkingspots
+
+###
+#User mit username und password returnen
+POST http://localhost:3000/users/login
+Content-Type: application/json
+
+{
+  "u_username": "saidov-arb",
+  "u_password": "password"
+}
 
 ###
 #User erstellen
@@ -12,48 +30,49 @@ POST http://localhost:3000/users
 Content-Type: application/json
 
 {
-    "u_email": "arbi.saidov@htl-wels.at",
-    "u_username": "saidov-arb",
-    "u_firstname": "arbi",
-    "u_lastname": "saidov",
-    "u_password": "password",
-    "uc_cars": [
-      {
-        "c_brand": "Audi",
-        "c_model": "R8",
-        "c_licenceplate": "WE3L444"
-      },
-      {
-        "c_brand": "BMW",
-        "c_model": "336",
-        "c_licenceplate": "WE5L336"
+  "u_email": "arbi.saidov@htl-wels.at",
+  "u_username": "saidov-arb",
+  "u_firstname": "arbi",
+  "u_lastname": "saidov",
+  "u_password": "password",
+  "uc_cars": [
+    {
+      "c_brand": "Audi",
+      "c_model": "R8",
+      "c_licenceplate": "WE3L444"
+    },
+    {
+      "c_brand": "BMW",
+      "c_model": "336",
+      "c_licenceplate": "WE5L336"
+    }
+  ],
+  "up_parkingspots": [
+    {
+      "p_number": 1,
+      "p_availablefrom": "Sunday - 10:00",
+      "p_availableuntil": "Sunday - 20:00",
+      "p_priceperhour": 10,
+      "pa_address": {
+        "a_country": "Austria",
+        "a_city": "Wels",
+        "a_zip": "4600",
+        "a_address1": "Fischergasse",
+        "a_address2": "30"
       }
-    ],
-    "up_parkingspots": [
-      {
-        "p_availablefrom": "Sunday - 10:00",
-        "p_availableuntil": "Sunday - 20:00",
-        "p_priceperhour": 10,
-        "pa_address": {
-          "a_country": "Austria",
-          "a_city": "Wels",
-          "a_zip": "4600",
-          "a_address1": "Fischergasse",
-          "a_address2": "30"
-        }
-      }
-    ]
+    }
+  ]
 }
 
 ###
 #User löschen
-DELETE http://localhost:3000/users/638b3d7048ea80de82c89d48
+DELETE http://localhost:3000/users/6394c71c516627872de28e0a
 
 ###
 #User aktualisieren
-PATCH http://localhost:3000/users/638b3d7b48ea80de82c89d4f
+PATCH http://localhost:3000/users/6394c71c516627872de28e0a
 Content-Type: application/json
 
 {
-    "u_password": "newpassword"
+  "u_password": "newpassword"
 }

@@ -3,7 +3,7 @@
 GET http://localhost:3000/users
 
 ###
-#Alle User returnen
+#Alle Parkplätze aller User returnen
 GET http://localhost:3000/users/parkingspots
 
 ###
@@ -11,17 +11,49 @@ GET http://localhost:3000/users/parkingspots
 GET http://localhost:3000/users/6394c71c516627872de28e0a
 
 ###
-#User mit bestimmter ID returnen
-GET http://localhost:3000/users/6394c71c516627872de28e0a/parkingspots
+#Parkplätze eines User mit bestimmter ID returnen
+GET http://localhost:3000/users/639b696b0bce366d17be96c3/parkingspots
 
 ###
-#User mit username und password returnen
+#User registrieren
+POST http://localhost:3000/users/register
+Content-Type: application/json
+
+{
+  "u_email": "arbi.saidov@htl-wels.at",
+  "u_username": "saidov-arb",
+  "u_firstname": "arbi",
+  "u_lastname": "saidov",
+  "u_password": "password"
+}
+
+###
+#User einloggen
 POST http://localhost:3000/users/login
 Content-Type: application/json
 
 {
   "u_username": "saidov-arb",
   "u_password": "password"
+}
+
+###
+#User einen Parkplatz hinzufügen
+POST http://localhost:3000/users/639b75dd7e0e9d6b008c6d49/parkingspots/create
+Content-Type: application/json
+
+{
+  "p_number": 1,
+  "p_availablefrom": "Sunday - 08:00",
+  "p_availableuntil": "Sunday - 12:00",
+  "p_priceperhour": 20,
+  "pa_address": {
+    "a_country": "Austria",
+    "a_city": "Wels",
+    "a_zip": "4600",
+    "a_address1": "Handel-Mazzetti-Strasse",
+    "a_address2": "187"
+  }
 }
 
 ###
@@ -66,7 +98,7 @@ Content-Type: application/json
 
 ###
 #User löschen
-DELETE http://localhost:3000/users/6394c71c516627872de28e0a
+DELETE http://localhost:3000/users/639b6aa67f9f4f9d05f20d78
 
 ###
 #User aktualisieren

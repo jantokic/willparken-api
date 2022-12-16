@@ -46,8 +46,7 @@ const addressSchema = new mongoose.Schema({
 const parkingspotSchema = new mongoose.Schema({
     p_number: {
         type: Number,
-        required: true,
-        unique: true
+        required: false
     },
     p_availablefrom: {
         type: String,

@@ -1,5 +1,7 @@
 const express = require('express')
 const router = express.Router()
+const mongoose = require('mongoose')
+const Parkingspot = require('../models/parkingspot')
 const User = require('../models/user')
 
 // Returned alle User
@@ -11,23 +13,6 @@ router.get('/', async (req, res) => {
         res.status(500).json({ message: err.message })
     }
 })
-
-// Returned alle Parkingspots von allen Usern
-router.get('/parkingspots/', async (req, res) => {
-    try {
-        const users = await User.find()
-        let retval = [];
-        users.forEach(user => {
-            user.up_parkingspots.forEach(parkingspot => {
-                retval.push(parkingspot);
-            });
-        });
-        res.json(retval)
-    } catch (err) {
-        res.status(500).json({ message: err.message })
-    }
-})
-
 
 // Returned einen User anhand der OID
 router.get('/:oid', getUserByOID, (req, res) => {
@@ -53,8 +38,7 @@ router.post('/register', async (req, res) => {
             u_username: newUser.u_username
         })
         if (!user){
-            // Speichert den User in die DB und wenn erfolgreich, 
-            // gibt es den User zurück
+            // Speichert den User in die DB, wenn der Username noch nicht existiert
             const returnedUser = await newUser.save()
             res.status(201).json(returnedUser)
         }else{
@@ -115,20 +99,52 @@ router.get('/:oid/parkingspots', getUserByOID, (req, res) => {
 
 // Erstellt einen User
 router.post('/', async (req, res) => {
+    // User anlegen - wird in Users Collection gespeichert
     const user = new User({
+        _id: new mongoose.Types.ObjectId(),
         u_email: req.body.u_email,
         u_username: req.body.u_username,
         u_firstname: req.body.u_firstname,
         u_lastname: req.body.u_lastname,
         u_password: req.body.u_password,
-        uc_cars: req.body.uc_cars,
-        up_parkingspots: req.body.up_parkingspots
+        uc_cars: req.body.uc_cars
     })
+    // Parkingspots anlegen - wird in Parkingspots Collection gespeichert
+    // Die _id vom User wird als p_owner gespeichert
+    let parkingspots = []
+    req.body.up_parkingspots.forEach(iParkingspot => {
+        const parkingspot = new Parkingspot({
+            _id: new mongoose.Types.ObjectId(),
+            p_owner: user._id,
+            p_number: iParkingspot.p_number,
+            p_availablefrom: iParkingspot.p_availablefrom,
+            p_availableuntil: iParkingspot.p_availableuntil,
+            p_priceperhour: iParkingspot.p_priceperhour,
+            pa_address: {
+                a_country: iParkingspot.pa_address.a_country,
+                a_city: iParkingspot.pa_address.a_city,
+                a_zip: iParkingspot.pa_address.a_zip,
+                a_address1: iParkingspot.pa_address.a_address1,
+                a_address2: iParkingspot.pa_address.a_address2
+            }
+        })
+        // Die ID vom Parkplatz wird dem up_parkingspots Array hinzugefügt
+        user.up_parkingspots.push(parkingspot._id)
+        // Parkingspot wird in Array gespeichert um danach in DB zu speichern
+        parkingspots.push(parkingspot)
+    })
+    
     try {
         // Speichert den User in die DB und wenn erfolgreich, 
         // gibt es den User zurück
         const newUser = await user.save()
-        res.status(201).json(newUser)
+        parkingspots.forEach(async iParkingspot =>{
+            await iParkingspot.save()
+        })
+        // https://mongoosejs.com/docs/populate.html
+        const populatedUser = await User.findOne({ _id: newUser._id })
+            .populate('up_parkingspots')
+        res.status(201).json(populatedUser)
     }catch(err){
         res.status(400).json({ message: err.message })
     }
@@ -167,7 +183,7 @@ router.delete('/:oid', getUserByOID, async (req, res) => {
     }
 })
 
-// Ist die Middleware für die Funktionen, in denen ein User benötigt wird
+// Ist die Middleware für die Funktionen, in denen ein User mit Id gesucht wird
 async function getUserByOID (req, res, next) { 
     let user
     try {

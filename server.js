@@ -24,7 +24,9 @@ db.once('open', () => console.log('Connected to Database.'))
 
 app.use(express.json())
 const usersRouter = require('./routes/users')
+const parkingspotsRouter = require('./routes/parkingspots')
 app.use('/users', usersRouter)
+app.use('/parkingspots', parkingspotsRouter)
 
 
 app.listen(process.env.API_PORT, () => console.log('Server Started.'))

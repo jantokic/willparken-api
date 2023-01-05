@@ -3,16 +3,20 @@
 GET http://localhost:3000/users
 
 ###
+#Alle Parkingspots returnen
+GET http://localhost:3000/parkingspots
+
+###
 #Alle Parkplätze aller User returnen
-GET http://localhost:3000/users/parkingspots
+#GET http://localhost:3000/users/parkingspots
 
 ###
 #User mit bestimmter ID returnen
-GET http://localhost:3000/users/6394c71c516627872de28e0a
+GET http://localhost:3000/users/63b6d8ae4995e556fd914280
 
 ###
 #Parkplätze eines User mit bestimmter ID returnen
-GET http://localhost:3000/users/639b696b0bce366d17be96c3/parkingspots
+#GET http://localhost:3000/users/639b696b0bce366d17be96c3/parkingspots
 
 ###
 #User registrieren

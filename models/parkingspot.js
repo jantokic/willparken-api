@@ -1,27 +1,8 @@
 const mongoose = require('mongoose')
 
-const addressSchema = new mongoose.Schema({
-    a_country: {
-        type: String,
-        required: true
-    },
-    a_city: {
-        type: String,
-        required: true
-    },
-    a_zip: {
-        type: String,
-        required: true
-    },
-    a_address1: {
-        type: String,
-        required: true
-    },
-    a_address2: {
-        type: String,
-        required: false
-    }
-})
+const addressSchema = require('./address.js')
+const reservationSchema = require('./reservation.js')
+const timeframeSchema = require('./timeframe.js')
 
 const parkingspotSchema = new mongoose.Schema({
     p_owner: {type: mongoose.Schema.Types.ObjectId, ref: 'User'},
@@ -29,18 +10,16 @@ const parkingspotSchema = new mongoose.Schema({
         type: Number,
         required: false
     },
-    p_availablefrom: {
-        type: String,
-        required: true
-    },
-    p_availableuntil: {
-        type: String,
-        required: true
-    },
     p_priceperhour: {
         type: String,
         required: true
     },
+    p_tags: [{
+        type: String,
+        required: false
+    }],
+    pt_availability: timeframeSchema,
+    pr_reservations: [reservationSchema],
     pa_address: addressSchema
 })
 

@@ -3,6 +3,7 @@ require('dotenv').config()
 const express = require('express')
 const app = express()
 
+const logger = require('morgan');
 
 const mongoose = require ('mongoose')
 mongoose.connect(
@@ -22,6 +23,7 @@ const db = mongoose.connection
 db.on('error', (error) => console.error(error))
 db.once('open', () => console.log('Connected to Database.'))
 
+app.use(logger('dev'));
 app.use(express.json())
 const usersRouter = require('./routes/users')
 const parkingspotsRouter = require('./routes/parkingspots')

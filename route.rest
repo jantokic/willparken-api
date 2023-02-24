@@ -43,6 +43,9 @@ Content-Type: application/json
   "u_password": "newpassword"
 }
 
+###
+#User löschen
+DELETE http://localhost:3000/users/delete
 
 
 ###
@@ -59,6 +62,19 @@ Content-Type: application/json
 }
 
 ###
+#Car aktualisieren
+PATCH http://localhost:3000/users/updateCar
+Content-Type: application/json
+
+{
+  "c_car": {
+    "c_id": "63f8f149142937fcbaeed17c",
+    "c_brand": "BMW",
+    "c_model": "M3"
+  }
+}
+
+###
 #Car löschen
 DELETE http://localhost:3000/users/deleteCar
 Content-Type: application/json
@@ -69,19 +85,21 @@ Content-Type: application/json
   }
 }
 
+
 ###
-#Car aktualisieren
-PATCH http://localhost:3000/users/updateCar
+# Bestimmtes Car eines Users returnen
+POST http://localhost:3000/users/getCar
 Content-Type: application/json
 
 {
   "c_car": {
-    "c_id": "639b6aa67f9f4f9d05f20d78",
-    "c_brand": "Audi"
+    "c_id": "639b6aa67f9f4f9d05f20d78"
   }
 }
 
-
+###
+#Alle Cars eines Users returnen
+GET http://localhost:3000/users/getCars
 
 ###
 #Parkingspot hinzufügen

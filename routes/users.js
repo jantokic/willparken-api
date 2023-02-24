@@ -1,219 +1,217 @@
-const express = require('express')
-const router = express.Router()
-const mongoose = require('mongoose')
-const Parkingspot = require('../models/parkingspot')
-const User = require('../models/user')
+const express = require("express");
+const router = express.Router();
+const User = require("../models/user");
 
 // Returned alle User
-router.get('/', async (req, res) => {
-    try {
-        const users = await User.find()
-        res.json(users)
-    } catch (err) {
-        res.status(500).json({ message: err.message })
-    }
-})
+router.get("/", async (req, res) => {
+  try {
+    const users = await User.find();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Returned alle Parkingspots von allen Usern
+router.get("/parkingspots/", async (req, res) => {
+  try {
+    const users = await User.find();
+    let retval = [];
+    users.forEach((user) => {
+      user.up_parkingspots.forEach((parkingspot) => {
+        retval.push(parkingspot);
+      });
+    });
+    res.json(retval);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 
 // Returned einen User anhand der OID
-router.get('/:oid', getUserByOID, (req, res) => {
-    res.send(res.user)
-})
-
-// Returned einen User anhand von Username und Password
-router.post('/login', getUser, (req, res) => {
-    res.send(res.user)
-})
+router.get("/getUser", getUser, (req, res) => {
+  res.send(res.user);
+});
 
 // Registriert einen User
-router.post('/register', async (req, res) => {
-    const newUser = new User({
-        u_email: req.body.u_email,
-        u_username: req.body.u_username,
-        u_firstname: req.body.u_firstname,
-        u_lastname: req.body.u_lastname,
-        u_password: req.body.u_password
-    })
-    try {
+router.post("/register", async (req, res) => {
+  const newUser = new User({
+    u_email: req.body.u_email,
+    u_username: req.body.u_username,
+    u_firstname: req.body.u_firstname,
+    u_lastname: req.body.u_lastname,
+    u_password: req.body.u_password,
+  });
+  try {
+    user = await User.findOne({
+      u_username: newUser.u_username,
+    });
+    if (!user) {
+      // Speichert den User in die DB und wenn erfolgreich,
+      // gibt es den User zurück
+      const returnedUser = await newUser.save();
+      res
+        .status(201)
+        .json({ message: "User registered succesfully.", user: returnedUser });
+    } else {
+      res.status(400).json({ message: "Username already exists." });
+    }
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// Returned einen User anhand von Username und Password
+router.post("/login", async (req, res) => {
+    let user;
+    if (req.session.u_id) {
+      res.status(200).json({ message: "User already logged in." });
+    } else {
+      try {
         user = await User.findOne({
-            u_username: newUser.u_username
-        })
-        if (!user){
-            // Speichert den User in die DB, wenn der Username noch nicht existiert
-            const returnedUser = await newUser.save()
-            res.status(201).json(returnedUser)
-        }else{
-            res.status(400).json({ message: "Username already exists." })
+          u_username: req.body.u_username,
+          u_password: req.body.u_password,
+        });
+        if (user == null) {
+          return res.status(404).json({ message: "Cannot find User." });
         }
-    }catch(err){
-        res.status(400).json({ message: err.message })
+      } catch (err) {
+        return res.status(500).json({ message: err.message });
+      }
+      req.session.u_id = user._id;
+      res.status(200).json({ message: "User logged in successfully.", user: user });
     }
-})
-
-// Fügt einem User einen Parkplatz hinzu
-router.post('/:oid/parkingspots/create', getUserByOID, async (req, res) => {
-    const parkingspotToAdd = {
-        p_number: req.body.p_number,
-        p_availablefrom: req.body.p_availablefrom,
-        p_availableuntil: req.body.p_availableuntil,
-        p_priceperhour: req.body.p_priceperhour,
-        pa_address: {
-            a_country: req.body.pa_address.a_country,
-            a_city: req.body.pa_address.a_city,
-            a_zip: req.body.pa_address.a_zip,
-            a_address1: req.body.pa_address.a_address1,
-            a_address2: req.body.pa_address.a_address2
-        }
-    }
-    // nimmt alle Parkplätze raus, mit der selben Adresse
-    let parkingspotswithsameaddress = res.user.up_parkingspots.filter(parkingspot => {
-        return parkingspot.pa_address.a_country == parkingspotToAdd.pa_address.a_country &&
-            parkingspot.pa_address.a_city == parkingspotToAdd.pa_address.a_city &&
-            parkingspot.pa_address.a_zip == parkingspotToAdd.pa_address.a_zip &&
-            parkingspot.pa_address.a_address1 == parkingspotToAdd.pa_address.a_address1 &&
-            parkingspot.pa_address.a_address2 == parkingspotToAdd.pa_address.a_address2
-    })
-    if (parkingspotswithsameaddress.length > 0){
-        // von den Parkplätzem, die die selbe Adresse haben
-        // wird geprüft, ob es einen Parkplatz mit der selben Nummer gibt
-        let parkingspotwithsamenumber = parkingspotswithsameaddress.filter(parkingspot => {
-            return parkingspot.p_number == parkingspotToAdd.p_number
-        })
-        if (parkingspotwithsamenumber.length > 0){
-            console.log('Parkingspot already exists - Count: ' + parkingspotwithsamenumber.length)
-            return res.status(400).json({ message: "Parkingspot already exists." })
-        }
-    }
-    res.user.up_parkingspots.push(parkingspotToAdd)
-    try {
-        const updatedUser = await res.user.save()
-        res.json(updatedUser)
-    } catch (err) {
-        res.status(400).json({ message: err.message })
-    }
-})
-
-// Returned alle Parkingspots eines Users
-router.get('/:oid/parkingspots', getUserByOID, (req, res) => {
-    res.send(res.user.up_parkingspots)
-})
-
-// Erstellt einen User
-router.post('/', async (req, res) => {
-    // User anlegen - wird in Users Collection gespeichert
-    const user = new User({
-        _id: new mongoose.Types.ObjectId(),
-        u_email: req.body.u_email,
-        u_username: req.body.u_username,
-        u_firstname: req.body.u_firstname,
-        u_lastname: req.body.u_lastname,
-        u_password: req.body.u_password,
-        uc_cars: req.body.uc_cars
-    })
-    // Parkingspots anlegen - wird in Parkingspots Collection gespeichert
-    // Die _id vom User wird als p_owner gespeichert
-    let parkingspots = []
-    req.body.up_parkingspots.forEach(iParkingspot => {
-        const parkingspot = new Parkingspot({
-            _id: new mongoose.Types.ObjectId(),
-            p_owner: user._id,
-            p_number: iParkingspot.p_number,
-            p_availablefrom: iParkingspot.p_availablefrom,
-            p_availableuntil: iParkingspot.p_availableuntil,
-            p_priceperhour: iParkingspot.p_priceperhour,
-            pa_address: {
-                a_country: iParkingspot.pa_address.a_country,
-                a_city: iParkingspot.pa_address.a_city,
-                a_zip: iParkingspot.pa_address.a_zip,
-                a_address1: iParkingspot.pa_address.a_address1,
-                a_address2: iParkingspot.pa_address.a_address2
-            }
-        })
-        // Die ID vom Parkplatz wird dem up_parkingspots Array hinzugefügt
-        user.up_parkingspots.push(parkingspot._id)
-        // Parkingspot wird in Array gespeichert um danach in DB zu speichern
-        parkingspots.push(parkingspot)
-    })
-    
-    try {
-        // Speichert den User in die DB und wenn erfolgreich, 
-        // gibt es den User zurück
-        const newUser = await user.save()
-        parkingspots.forEach(async iParkingspot =>{
-            await iParkingspot.save()
-        })
-        // https://mongoosejs.com/docs/populate.html
-        const populatedUser = await User.findOne({ _id: newUser._id })
-            .populate('up_parkingspots')
-        res.status(201).json(populatedUser)
-    }catch(err){
-        res.status(400).json({ message: err.message })
-    }
-})
+});
 
 // Aktualisiert einen User
-router.patch('/:oid', getUserByOID, async (req, res) => {
-    if(req.body.u_email != null) {
-        res.user.u_email = req.body.u_email
-    }
-    if(req.body.u_firstname != null) {
-        res.user.u_firstname = req.body.u_firstname
-    }
-    if(req.body.u_lastname != null) {
-        res.user.u_lastname = req.body.u_lastname
-    }
-    if(req.body.u_password != null) {
-        res.user.u_password = req.body.u_password
-    }
-    try {
-        const updatedUser = await res.user.save()
-        res.json(updatedUser)
-    }
-    catch (err) {
-        res.status(400).json({ message: err.message })
-    }
-})
+router.patch("/update", getUser, async (req, res) => {
+  if (req.body.u_email != null) {
+    res.user.u_email = req.body.u_email;
+  }
+  if (req.body.u_firstname != null) {
+    res.user.u_firstname = req.body.u_firstname;
+  }
+  if (req.body.u_lastname != null) {
+    res.user.u_lastname = req.body.u_lastname;
+  }
+  if (req.body.u_password != null) {
+    res.user.u_password = req.body.u_password;
+  }
+  try {
+    const updatedUser = await res.user.save();
+    res
+      .status(200)
+      .json({ message: "User updated successfully.", user: updatedUser });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
 
 // Löscht einen User
-router.delete('/:oid', getUserByOID, async (req, res) => {
-    try{
-        await res.user.remove()
-        res.json({ message: 'Deleted User.' })
-    }catch(err){
-        res.status(500).json({ message: err.message })
-    }
-})
+router.delete("/delete", getUser, async (req, res) => {
+  try {
+    await res.user.remove();
+    res.json({ message: "User deleted successfully." });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
-// Ist die Middleware für die Funktionen, in denen ein User mit Id gesucht wird
-async function getUserByOID (req, res, next) { 
-    let user
-    try {
-        user = await User.findById(req.params.oid)
-        if (user == null) {
-            return res.status(404).json ({ message: 'Cannot find User.' })
-        }
-    } catch (err) {
-        return res.status(500).json({ message: err.message })
+// Fügt dem eingeloggten User ein Auto hinzu
+router.post("/addCar", getUser, async (req, res) => {
+  let car = req.body.c_car;
+  res.user.uc_cars.push(car);
+  try {
+    const updatedUser = await res.user.save();
+    res
+      .status(200)
+      .json({ message: "Car added successfully.", user: updatedUser });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// Aktualisiert ein Auto des eingeloggten Users
+router.patch("/updateCar", getUser, getCar, async (req, res) => {
+    if (req.body.c_car.c_brand != null) {
+        res.car.c_brand = req.body.c_car.c_brand;
     }
-    res.user = user
-    next()
+    if (req.body.c_car.c_model != null) {
+        res.car.c_model = req.body.c_car.c_model;
+    }
+    if (req.body.c_car.c_licenceplate != null) {
+        res.car.c_licenceplate = req.body.c_car.c_licenceplate;
+    }
+    try {
+        // aktualisiert das Auto im Array
+        res.user.uc_cars[res.user.uc_cars.indexOf(res.car)] = res.car;
+        const updatedUser = await res.user.save();
+        res
+            .status(200)
+            .json({ message: "Car updated successfully.", user: updatedUser });
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+});
+
+// Löscht ein Auto des eingeloggten Users
+router.delete("/deleteCar", getUser, getCar, async (req, res) => {
+  // Löscht das von getCar zurückgegebene Auto aus dem Array
+  res.user.uc_cars.splice(res.user.uc_cars.indexOf(res.car), 1);
+  try {
+    const updatedUser = await res.user.save();
+    res
+      .status(200)
+      .json({ message: "Car deleted successfully.", user: updatedUser });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// Returned alle Autos von einem User
+router.get("/getCars", getUser, async (req, res) => {
+    res.send(res.user.uc_cars);
+});
+
+
+// Ist die Middleware für die Funktionen, in denen ein User benötigt wird
+// Gibt den User zurück, der in der Session gespeichert ist
+async function getUser(req, res, next) {
+  let user;
+  try {
+    user = await User.findById(req.session.u_id);
+    console.log(user);
+    if (user == null) {
+      return res.status(404).json({ message: "Cannot find User." });
+    }
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+  res.user = user;
+  next();
 }
 
-// Ist die Middleware für die Funktionen, in denen ein User eingeloggt wird
-async function getUser (req, res, next) { 
-    let user
-    try {
-        user = await User.findOne({
-            u_username: req.body.u_username,
-            u_password: req.body.u_password
-        })
-        if (user == null) {
-            return res.status(404).json ({ message: 'Cannot find User.' })
-        }
-    } catch (err) {
-        return res.status(500).json({ message: err.message })
+// Ist die Middleware für die Funktionen, bei denen ein Auto benötigt wird
+// Gibt das Auto zurück, das der mitgegeben id entspricht
+async function getCar(req, res, next) {
+  let car;
+  try {
+    console.log(req.body.c_car.c_id);
+    console.log(res.user.uc_cars);
+    res.user.uc_cars.forEach((c) => {
+      if (c._id == req.body.c_car.c_id) {
+        car = c;
+      }
+    });
+    if (car == null) {
+      return res.status(404).json({ message: "Cannot find Car." });
     }
-    res.user = user
-    next()
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+  res.car = car;
+  next();
 }
 
-module.exports = router
+module.exports = router;

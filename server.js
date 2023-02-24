@@ -1,7 +1,9 @@
 require('dotenv').config()
 
 const express = require('express')
+const session = require('express-session')
 const app = express()
+const crypto = require('crypto')
 
 const logger = require('morgan');
 
@@ -25,6 +27,11 @@ db.once('open', () => console.log('Connected to Database.'))
 
 app.use(logger('dev'));
 app.use(express.json())
+app.use(session({
+    secret: crypto.randomBytes(64).toString('hex'),
+    resave: false,
+    saveUninitialized: true,
+}))
 const usersRouter = require('./routes/users')
 const parkingspotsRouter = require('./routes/parkingspots')
 app.use('/users', usersRouter)

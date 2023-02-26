@@ -18,22 +18,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Returned alle Parkingspots von allen Usern
-router.get("/parkingspots", async (req, res) => {
-  try {
-    const users = await User.find();
-    let parkingspots = [];
-    users.forEach((user) => {
-      user.up_parkingspots.forEach((parkingspot) => {
-        parkingspots.push(parkingspot);
-      });
-    });
-    res.json({ message: "All parkingspots:", parkingspots: parkingspots });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
 // Returned derzeit eingeloggten User
 router.get("/getUser", getUser, (req, res) => {
   res.send({ message: "Currently logged in user:", user: res.user });
@@ -112,16 +96,18 @@ router.post(
           u_username: req.body.u_username,
           u_password: req.body.u_password,
         });
-        if (user == null) {
-          res.status(404).json({ message: "Cannot find User." });
+        if (user) {
+          req.session.u_id = user._id;
+          res.status(200).json({
+            message: "User logged in successfully.",
+            user: user,
+          });
+        } else {
+          res.status(400).json({ message: "Wrong username or password." });
         }
       } catch (err) {
         res.status(500).json({ message: err.message });
       }
-      req.session.u_id = user._id;
-      res
-        .status(200)
-        .json({ message: "User logged in successfully.", user: user });
     }
   }
 );

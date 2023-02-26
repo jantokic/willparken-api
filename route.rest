@@ -7,9 +7,11 @@ GET http://localhost:3000/users
 GET http://localhost:3000/parkingspots
 
 
+### USER ROUTEN ###
 
-
-###ROUTEN DIE WIR BRAUCHEN
+###
+#derzeit eingeloggten User returnen
+GET http://localhost:3000/users/getUser
 
 ###
 #User registrieren
@@ -33,6 +35,10 @@ Content-Type: application/json
   "u_username": "saidov-arb",
   "u_password": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
 }
+
+###
+#User ausloggen
+GET http://localhost:3000/users/logout
 
 ###
 #User aktualisieren
@@ -68,7 +74,7 @@ Content-Type: application/json
 
 {
   "c_car": {
-    "c_id": "63f8f149142937fcbaeed17c",
+    "c_id": "63fb9b845e81169b2d1b96fe",
     "c_brand": "BMW",
     "c_model": "M3"
   }
@@ -81,7 +87,7 @@ Content-Type: application/json
 
 {
   "c_car": {
-    "c_id": "639b6aa67f9f4f9d05f20d78"
+    "c_id": "63fb9b845e81169b2d1b96fe"
   }
 }
 
@@ -93,13 +99,17 @@ Content-Type: application/json
 
 {
   "c_car": {
-    "c_id": "639b6aa67f9f4f9d05f20d78"
+    "c_id": "63fb89b0af6ea57feda63e39"
   }
 }
 
 ###
 #Alle Cars eines Users returnen
 GET http://localhost:3000/users/getCars
+
+
+
+### PARKINGSPOT ROUTEN ###
 
 ###
 #Parkingspot hinzufügen
@@ -198,50 +208,4 @@ Content-Type: application/json
   "pr_reservation": {
     "r_id": "639b6aa67f9f4f9d05f20d78"
   }
-}
-
-
-
-
-###TEMPORÄR (TEST)
-
-###
-#User erstellen
-POST http://localhost:3000/users
-Content-Type: application/json
-
-{
-  "u_email": "arbi.saidov@htl-wels.at",
-  "u_username": "saidov-arb",
-  "u_firstname": "arbi",
-  "u_lastname": "saidov",
-  "u_password": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
-  "uc_cars": [
-    {
-      "c_brand": "Audi",
-      "c_model": "R8",
-      "c_licenceplate": "WE3L444"
-    },
-    {
-      "c_brand": "BMW",
-      "c_model": "336",
-      "c_licenceplate": "WE5L336"
-    }
-  ],
-  "up_parkingspots": [
-    {
-      "p_number": 1,
-      "p_availablefrom": "Sunday - 10:00",
-      "p_availableuntil": "Sunday - 20:00",
-      "p_priceperhour": 10,
-      "pa_address": {
-        "a_country": "Austria",
-        "a_city": "Wels",
-        "a_zip": "4600",
-        "a_street": "Fischergasse",
-        "a_houseno": "30"
-      }
-    }
-  ],
-  "ur_reservations": []
-}
+} 

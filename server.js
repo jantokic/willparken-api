@@ -31,6 +31,7 @@ app.use(session({
     secret: crypto.randomBytes(64).toString('hex'),
     resave: false,
     saveUninitialized: true,
+    store:new session.MemoryStore()
 }))
 const usersRouter = require('./routes/users')
 const parkingspotsRouter = require('./routes/parkingspots')

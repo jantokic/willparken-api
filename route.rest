@@ -74,7 +74,7 @@ Content-Type: application/json
 
 {
   "c_car": {
-    "c_id": "63fb9b845e81169b2d1b96fe",
+    "c_id": "63fe6d132aa4503c5040ccbb",
     "c_brand": "BMW",
     "c_model": "M3"
   }
@@ -87,7 +87,7 @@ Content-Type: application/json
 
 {
   "c_car": {
-    "c_id": "63fb9b845e81169b2d1b96fe"
+    "c_id": "63fe82a591fd815eb34540d2"
   }
 }
 
@@ -99,7 +99,7 @@ Content-Type: application/json
 
 {
   "c_car": {
-    "c_id": "63fb89b0af6ea57feda63e39"
+    "c_id": "63fe6d132aa4503c5040ccbb"
   }
 }
 
@@ -140,28 +140,28 @@ Content-Type: application/json
 }
 
 ###
-#Parkingspot löschen
-DELETE http://localhost:3000/parkingspots/delete
-Content-Type: application/json
-
-{
-  "p_id": "639b6aa67f9f4f9d05f20d78"
-}
-
-###
 #Parkingspot aktualisieren
 PATCH http://localhost:3000/parkingspots/update
 Content-Type: application/json
 
 {
-  "p_id": "639b6aa67f9f4f9d05f20d78",
+  "p_id": "63fe6d4f2aa4503c5040ccc8",
   "pa_address": {
-    "a_houseno": "30"
+    "a_houseno": "1"
   }
 }
 
 ###
-#Parkingspot suchen
+#Parkingspot löschen
+DELETE http://localhost:3000/parkingspots/delete
+Content-Type: application/json
+
+{
+  "p_id": "63fe7f6495f7c19d8afde68a"
+}
+
+###
+#Parkplatz suchen
 POST http://localhost:3000/parkingspots/search
 Content-Type: application/json
 
@@ -174,7 +174,9 @@ Content-Type: application/json
   }
 }
 
-
+###
+# Alle Parkingspots eines Users returnen
+GET http://localhost:3000/parkingspots/getUserParkingspots
 
 ###
 #Reservation hinzufügen
@@ -182,12 +184,10 @@ POST http://localhost:3000/parkingspots/makeReservation
 Content-Type: application/json
 
 {
-  "p_id": "639b6aa67f9f4f9d05f20d78",
+  "p_id": "63fe853ca18ec242f0a4199b",
   "pr_reservation": {
     "rc_car": {
-      "c_brand": "Audi",
-      "c_model": "R8",
-      "c_licenceplate": "WE3L444"
+      "c_id": "63fe8535a18ec242f0a41999"
     },
     "rt_timeframe": {
       "t_dayfrom": 20230101,
@@ -204,8 +204,8 @@ DELETE http://localhost:3000/parkingspots/cancelReservation
 Content-Type: application/json
 
 {
-  "p_id": "639b6aa67f9f4f9d05f20d78",
+  "p_id": "63fe853ca18ec242f0a4199b",
   "pr_reservation": {
-    "r_id": "639b6aa67f9f4f9d05f20d78"
+    "r_id": "63fe8546a18ec242f0a419a7"
   }
 } 

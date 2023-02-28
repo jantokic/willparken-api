@@ -1,6 +1,11 @@
 const mongoose = require('mongoose')
 
 const carSchema = new mongoose.Schema({
+    c_owner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
     c_brand: {
         type: String,
         required: true

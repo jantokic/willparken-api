@@ -26,6 +26,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    u_balance: {
+        type: Number,
+        required: false
+    },
     uc_cars: [carSchema],
     up_parkingspots: [{type: mongoose.Schema.Types.ObjectId, ref: 'Parkingspot'}],
     ur_reservations: [{type: mongoose.Schema.Types.ObjectId, ref: 'Reservation'}]

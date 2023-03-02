@@ -144,8 +144,6 @@ router.patch("/update", checkLogin, getUser, async (req, res) => {
     res
       .status(201)
       .json({ message: "User updated successfully.", content: updatedUser });
-      .status(201)
-      .json({ message: "User updated successfully.", content: updatedUser });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -187,7 +185,6 @@ router.post("/addCar", checkLogin, getUser, async (req, res) => {
     res
       .status(201)
       .json({ message: "Car added successfully.", content: updatedUser });
-      .json({ message: "Car added successfully.", content: updatedUser });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -225,7 +222,6 @@ router.delete("/deleteCar", checkLogin, getUser, getCar, async (req, res) => {
     const updatedUser = await res.user.save();
     res
       .status(200)
-      .json({ message: "Car deleted successfully.", content: updatedUser });
       .json({ message: "Car deleted successfully.", content: updatedUser });
   } catch (err) {
     res.status(400).json({ message: err.message });

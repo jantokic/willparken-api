@@ -3,27 +3,27 @@ const router = express.Router();
 const { body, validationResult } = require("express-validator");
 
 const User = require("../models/user");
+const Parkingspot = require("../models/parkingspot");
 
-const { getUser, getCar } = require("./middleware");
+const { getUser, getCar, checkLogin } = require("./middleware");
 
-// your route code here
 
-// Returned alle User
+// returns all users
 router.get("/", async (req, res) => {
   try {
     const users = await User.find();
-    res.json({ message: "All users:", users: users });
+    res.json({ message: "All users:", content: users });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// Returned derzeit eingeloggten User
-router.get("/getUser", getUser, (req, res) => {
-  res.send({ message: "Currently logged in user:", user: res.user });
+// returns the currently logged in user
+router.get("/getUser", checkLogin, getUser, (req, res) => {
+  res.send({ message: "Currently logged in user:", content: res.user });
 });
 
-// Registriert einen User
+// register a user
 router.post(
   "/register",
   [
@@ -39,41 +39,44 @@ router.post(
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
+
+    // check if user is already logged in
     let user;
     if (req.session.u_id) {
-      res.status(409).json({ message: "User already logged in." });
-    } else {
-      const newUser = new User({
-        u_email: req.body.u_email,
-        u_username: req.body.u_username,
-        u_firstname: req.body.u_firstname,
-        u_lastname: req.body.u_lastname,
-        u_password: req.body.u_password,
+      return res.status(409).json({ message: "User already logged in." });
+    }
+    // create new user
+    const newUser = new User({
+      u_email: req.body.u_email,
+      u_username: req.body.u_username,
+      u_firstname: req.body.u_firstname,
+      u_lastname: req.body.u_lastname,
+      u_password: req.body.u_password,
+    });
+    try {
+      // checks if the user name already exists
+      user = await User.findOne({
+        u_username: newUser.u_username,
       });
-      try {
-        user = await User.findOne({
-          u_username: newUser.u_username,
-        });
-        if (!user) {
-          // Speichert den User in die DB und wenn erfolgreich,
-          // gibt es den User zurück
-          const returnedUser = await newUser.save();
-          req.session.u_id = returnedUser._id;
-          res.status(201).json({
-            message: "User registered and logged in succesfully.",
-            user: returnedUser,
-          });
-        } else {
-          res.status(400).json({ message: "Username already exists." });
-        }
-      } catch (err) {
-        res.status(400).json({ message: err.message });
+      if (user) {
+        return res.status(400).json({ message: "Username already exists." });
       }
+
+      // save the user in the database
+      const returnedUser = await newUser.save();
+      req.session.u_id = returnedUser._id;
+      res.status(201).json({
+        message: "User registered and logged in succesfully.",
+        content: returnedUser,
+      });
+
+    } catch (err) {
+      res.status(400).json({ message: err.message });
     }
   }
 );
 
-// Returned einen User anhand von Username und Password
+// logs a user in via username and password
 router.post(
   "/login",
   [
@@ -87,34 +90,39 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
+    // check if user is already logged in
     let user;
     if (req.session.u_id) {
-      res.status(409).json({ message: "User already logged in." });
-    } else {
-      try {
-        user = await User.findOne({
-          u_username: req.body.u_username,
-          u_password: req.body.u_password,
+      return res.status(409).json({ message: "User already logged in." });
+    }
+
+    // find user in db
+    try {
+      user = await User.findOne({
+        u_username: req.body.u_username,
+        u_password: req.body.u_password,
+      });
+      // if user exists, create session and return user
+      if (user) {
+        req.session.u_id = user._id;
+        res.status(200).json({
+          message: "User logged in successfully.",
+          content: user,
         });
-        if (user) {
-          req.session.u_id = user._id;
-          res.status(200).json({
-            message: "User logged in successfully.",
-            user: user,
-          });
-        } else {
-          res.status(400).json({ message: "Wrong username or password." });
-        }
-      } catch (err) {
-        res.status(500).json({ message: err.message });
+      } else {
+        res.status(400).json({ message: "Wrong username or password." });
       }
+    } catch (err) {
+      res.status(500).json({ message: err.message });
     }
   }
 );
 
-// User ausloggen
+// log out user
 router.get("/logout", (req, res) => {
+  // check if user is logged in
   if (req.session.u_id) {
+    // delete session
     req.session.destroy();
     res.status(200).json({ message: "User logged out successfully." });
   } else {
@@ -122,100 +130,110 @@ router.get("/logout", (req, res) => {
   }
 });
 
-// Aktualisiert einen User
-router.patch("/update", getUser, async (req, res) => {
-  if (req.body.u_email != null) {
-    res.user.u_email = req.body.u_email;
-  }
-  if (req.body.u_firstname != null) {
-    res.user.u_firstname = req.body.u_firstname;
-  }
-  if (req.body.u_lastname != null) {
-    res.user.u_lastname = req.body.u_lastname;
-  }
-  if (req.body.u_password != null) {
-    res.user.u_password = req.body.u_password;
-  }
+// updates a user
+router.patch("/update", checkLogin, getUser, async (req, res) => {
   try {
-    const updatedUser = await res.user.save();
+    // find user by id and update only the fields that are in the request body
+    const updatedUser = await User.findByIdAndUpdate(
+      req.session.u_id,
+      req.body,
+      { new: true }
+    );
     res
-      .status(204)
-      .json({ message: "User updated successfully.", user: updatedUser });
+      .status(201)
+      .json({ message: "User updated successfully.", content: updatedUser });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-// Löscht einen User
-router.delete("/delete", getUser, async (req, res) => {
+// delete a user
+router.delete("/delete", checkLogin, getUser, async (req, res) => {
   try {
+    // check if user has parkingspots
+    if (res.user.up_parkingspots.length > 0) {
+      // delete user's parkingspots
+      for (let i = 0; i < res.user.up_parkingspots.length; i++) {
+        await Parkingspot.findByIdAndDelete(res.user.up_parkingspots[i]._id);
+      }
+    }
+
+    // delete user
     await res.user.remove();
+
+    // delete session
     req.session.destroy();
+
     res.json({ message: "User deleted successfully." });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// Fügt dem eingeloggten User ein Auto hinzu
-router.post("/addCar", getUser, async (req, res) => {
+// adds a car to the currently logged in user
+router.post("/addCar", checkLogin, getUser, async (req, res) => {
+  // create car
   let car = req.body.c_car;
+
+  // add car to user's array
   res.user.uc_cars.push(car);
   try {
+    // save changes in mongodb
     const updatedUser = await res.user.save();
     res
       .status(201)
-      .json({ message: "Car added successfully.", user: updatedUser });
+      .json({ message: "Car added successfully.", content: updatedUser });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-// Aktualisiert ein Auto des eingeloggten Users
+// updates a car of the currently logged in user
 router.patch("/updateCar", getUser, getCar, async (req, res) => {
-  if (req.body.c_car.c_brand != null) {
-    res.car.c_brand = req.body.c_car.c_brand;
-  }
-  if (req.body.c_car.c_model != null) {
-    res.car.c_model = req.body.c_car.c_model;
-  }
-  if (req.body.c_car.c_licenceplate != null) {
-    res.car.c_licenceplate = req.body.c_car.c_licenceplate;
-  }
   try {
-    // aktualisiert das Auto im Array
+    // only update properties that have been passed in the request body
+    for (let prop in req.body.c_car) {
+      if (req.body.c_car[prop] !== null) {
+        res.car[prop] = req.body.c_car[prop];
+      }
+    }
+
+    // update car in user's array
     res.user.uc_cars[res.user.uc_cars.indexOf(res.car)] = res.car;
-    const updatedUser = await res.user.save();
+
+    // save changes in mongodb
+    await res.user.save();
     res
       .status(200)
-      .json({ message: "Car updated successfully.", car: res.car });
+      .json({ message: "Car updated successfully.", content: res.car });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-// Löscht ein Auto des eingeloggten Users
-router.delete("/deleteCar", getUser, getCar, async (req, res) => {
-  // Löscht das von getCar zurückgegebene Auto aus dem Array
+// deletes a car that is passed in the request body
+router.delete("/deleteCar", checkLogin, getUser, getCar, async (req, res) => {
+  // delete car out of user's array
   res.user.uc_cars.splice(res.user.uc_cars.indexOf(res.car), 1);
   try {
+    // save changes in mongodb
     const updatedUser = await res.user.save();
     res
       .status(200)
-      .json({ message: "Car deleted successfully.", user: updatedUser });
+      .json({ message: "Car deleted successfully.", content: updatedUser });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-// Returned das Auto mit der mitgegebenen id
-router.get("/getCar", getUser, getCar, async (req, res) => {
-  res.send({ message: "Requested car:", car: res.car });
+// return a car that is passed in the request body
+router.post("/getCar", getUser, getCar, async (req, res) => {
+  res.send({ message: "Requested car:", content: res.car });
 });
 
-// Returned alle Autos von einem User
+// return all cars of the currently logged in user
 router.get("/getCars", getUser, async (req, res) => {
-  res.send({ message: "User's cars:", cars: await res.user.uc_cars });
+  res.send({ message: "User's cars:", content: await res.user.uc_cars });
 });
 
 module.exports = router;

@@ -4,6 +4,7 @@ const mongoose = require('mongoose')
 
 
 const carSchema = require('./car.js')
+const reservationSchema = require('./reservation.js')
 
 const userSchema = new mongoose.Schema({
     u_email: {
@@ -28,7 +29,7 @@ const userSchema = new mongoose.Schema({
     },
     uc_cars: [carSchema],
     up_parkingspots: [{type: mongoose.Schema.Types.ObjectId, ref: 'Parkingspot'}],
-    ur_reservations: [{type: mongoose.Schema.Types.ObjectId, ref: 'Reservation'}]
+    ur_reservations: [reservationSchema]
 })
 
 module.exports = mongoose.model('User', userSchema)

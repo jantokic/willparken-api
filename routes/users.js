@@ -6,12 +6,14 @@ const User = require("../models/user");
 const Parkingspot = require("../models/parkingspot");
 
 const { getUser, getCar, checkLogin } = require("./middleware");
+const { getUser, getCar, checkLogin } = require("./middleware");
 
 
 // returns all users
 router.get("/", async (req, res) => {
   try {
     const users = await User.find();
+    res.json({ message: "All users:", content: users });
     res.json({ message: "All users:", content: users });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -142,6 +144,8 @@ router.patch("/update", checkLogin, getUser, async (req, res) => {
     res
       .status(201)
       .json({ message: "User updated successfully.", content: updatedUser });
+      .status(201)
+      .json({ message: "User updated successfully.", content: updatedUser });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -183,6 +187,7 @@ router.post("/addCar", checkLogin, getUser, async (req, res) => {
     res
       .status(201)
       .json({ message: "Car added successfully.", content: updatedUser });
+      .json({ message: "Car added successfully.", content: updatedUser });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -221,6 +226,7 @@ router.delete("/deleteCar", checkLogin, getUser, getCar, async (req, res) => {
     res
       .status(200)
       .json({ message: "Car deleted successfully.", content: updatedUser });
+      .json({ message: "Car deleted successfully.", content: updatedUser });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -233,6 +239,7 @@ router.post("/getCar", getUser, getCar, async (req, res) => {
 
 // return all cars of the currently logged in user
 router.get("/getCars", getUser, async (req, res) => {
+  res.send({ message: "User's cars:", content: await res.user.uc_cars });
   res.send({ message: "User's cars:", content: await res.user.uc_cars });
 });
 

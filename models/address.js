@@ -20,6 +20,14 @@ const addressSchema = new mongoose.Schema({
     a_houseno: {
         type: String,
         required: false
+    },
+    a_longitude: {
+        type: Number,
+        required: false
+    },
+    a_latitude: {
+        type: Number,
+        required: false
     }
 })
 

@@ -2,7 +2,6 @@
 
 const mongoose = require('mongoose')
 
-
 const carSchema = require('./car.js')
 const reservationSchema = require('./reservation.js')
 
@@ -31,9 +30,20 @@ const userSchema = new mongoose.Schema({
         type: Number,
         required: false
     },
+    u_isactive: {
+        type: Boolean,
+        required: false,
+        default: true
+    },
     uc_cars: [carSchema],
-    up_parkingspots: [{type: mongoose.Schema.Types.ObjectId, ref: 'Parkingspot'}],
-    ur_reservations: [reservationSchema]
+    up_parkingspots: [{
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Parkingspot'
+    }],
+    ur_reservations: [{
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Reservation'
+    }]
 })
 
 module.exports = mongoose.model('User', userSchema)

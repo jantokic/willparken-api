@@ -1,11 +1,6 @@
 const mongoose = require('mongoose')
 
 const carSchema = new mongoose.Schema({
-    c_owner: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
     c_brand: {
         type: String,
         required: true
@@ -18,6 +13,11 @@ const carSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    c_isreserved: {
+        type: Boolean,
+        required: false,
+        default: false
+    }
 })
 
 module.exports = carSchema

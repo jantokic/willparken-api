@@ -6,14 +6,12 @@ const User = require("../models/user");
 const Parkingspot = require("../models/parkingspot");
 
 const { getUser, getCar, checkLogin } = require("./middleware");
-const { getUser, getCar, checkLogin } = require("./middleware");
 
 
 // returns all users
 router.get("/", async (req, res) => {
   try {
     const users = await User.find();
-    res.json({ message: "All users:", content: users });
     res.json({ message: "All users:", content: users });
   } catch (err) {
     res.status(500).json({ message: err.message });

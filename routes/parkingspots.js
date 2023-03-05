@@ -1,6 +1,7 @@
 const express = require("express");
 const session = require("express-session");
 const router = express.Router();
+const mongoose = require('mongoose');
 
 const Parkingspot = require("../models/parkingspot");
 const User = require("../models/user");
@@ -194,18 +195,20 @@ router.post(
       // check if the parkingspot exists
       if (parkingspot) {
         // create a reservation
-        const reservation = req.body.pr_reservation;
         req.body.pr_reservation.ru_user = req.session.u_id;
+        req.body.pr_reservation._id = mongoose.Types.ObjectId();
+        const reservation = req.body.pr_reservation;
 
         // add reservation to user array
         await User.updateOne(
           { _id: req.session.u_id },
-          { $push: { ur_reservations: reservation } }
+          { $push: { ur_reservations: { reservationid: reservation._id, parkingspotid: parkingspot._id } } }
         );
 
         // add the reservation to the parkingspot
         parkingspot.pr_reservations.push(reservation);
         await parkingspot.save();
+
         res.status(201).json({
           message: "Reservation added.",
           content: reservation,

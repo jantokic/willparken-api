@@ -78,6 +78,7 @@ router.patch(
         // Update the parkingspot
         const parkingspotFields = ["p_number", "p_priceperhour", "p_tags"];
         const availabilityFields = [
+          "t_weekday",
           "t_dayfrom",
           "t_dayuntil",
           "t_timefrom",
@@ -89,6 +90,8 @@ router.patch(
           "a_zip",
           "a_street",
           "a_houseno",
+          "a_longitude",
+          "a_latitude",
         ];
         for (const field of parkingspotFields) {
           if (req.body[field] !== undefined) {

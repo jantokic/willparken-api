@@ -27,7 +27,8 @@ const userSchema = new mongoose.Schema({
     },
     u_balance: {
         type: Number,
-        required: false
+        required: true,
+        default: 0
     },
     u_isactive: {
         type: Boolean,

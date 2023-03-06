@@ -23,11 +23,13 @@ const addressSchema = new mongoose.Schema({
     },
     a_longitude: {
         type: Number,
-        required: false
+        required: false,
+        default: 13.5501
     },
     a_latitude: {
         type: Number,
-        required: false
+        required: false,
+        default: 47.5162
     }
 })
 

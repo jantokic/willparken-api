@@ -129,7 +129,6 @@ Content-Type: application/json
     "t_timefrom": 480,
     "t_timeuntil": 960
   },
-  "pr_reservations": [],
   "pa_address": {
     "a_country": "Austria",
     "a_city": "Wels",
@@ -174,9 +173,6 @@ Content-Type: application/json
   }
 }
 
-###
-# Alle Parkingspots eines Users returnen
-GET http://localhost:3000/parkingspots/getUserParkingspots
 ###
 # Alle Parkingspots eines Users returnen
 GET http://localhost:3000/parkingspots/getUserParkingspots

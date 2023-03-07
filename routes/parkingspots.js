@@ -77,6 +77,7 @@ router.patch(
         // Update the parkingspot
         const parkingspotFields = ["p_number", "p_priceperhour", "p_tags"];
         const availabilityFields = [
+          "t_weekday",
           "t_dayfrom",
           "t_dayuntil",
           "t_timefrom",
@@ -88,6 +89,8 @@ router.patch(
           "a_zip",
           "a_street",
           "a_houseno",
+          "a_longitude",
+          "a_latitude",
         ];
         for (const field of parkingspotFields) {
           if (req.body[field] !== undefined) {
@@ -192,7 +195,7 @@ router.post(
     try {
       const parkingspot = await Parkingspot.findById(req.body.p_id);
       // check if the parkingspot exists
-      if (parkingspot) {
+      if (!parkingspot) {
         return res.status(404).json({ message: "Parkingspot not found." });
       }
       // create a reservation
@@ -279,8 +282,13 @@ router.delete(
 
       // go through the user's reservations that are not cancelled and check if the car has other reservations
       // if the car doesn't have other reservations, set c_isreserved to false
-
-      const car = res.user.uc_cars.find((c) => c._id == reservation.rc_car);
+      let car;
+      res.user.uc_cars.forEach((c) => {
+        if (c._id.toString() === reservation.rc_car.toString()) {
+          car = c;
+        }
+      });
+      
       let hasOtherReservations = false;
       res.user.ur_reservations.forEach((userReservation) => {
         if (

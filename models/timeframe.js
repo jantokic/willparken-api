@@ -1,11 +1,11 @@
 const mongoose = require('mongoose')
 
 /**
- * t_dayfrom, t_dayuntil werden in der Datenbank als Integer gespeichert
+ * t_dayfrom, t_dayuntil integers
  *      z.B.: 2023-08-30 = 20230830
- * t_timefrom, t_timeuntil werden in der Datenbank als Integer gespeichert (in Minuten)
+ * t_timefrom, t_timeuntil integers (minutes)
  *     z.B.: 13:30 = 810
- */
+*/
 
 const timeframeSchema = new mongoose.Schema({
     t_weekday: {

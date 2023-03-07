@@ -74,7 +74,7 @@ Content-Type: application/json
 
 {
   "c_car": {
-    "c_id": "63ff35af9e945e6c208d9c5d",
+    "c_id": "6407576c4eb96fde2d6689c8",
     "c_brand": "BMW",
     "c_model": "M3"
   }
@@ -87,7 +87,7 @@ Content-Type: application/json
 
 {
   "c_car": {
-    "c_id": "63ff35af9e945e6c208d9c5d"
+    "c_id": "6407704d5a05ed62a1d66315"
   }
 }
 
@@ -99,7 +99,7 @@ Content-Type: application/json
 
 {
   "c_car": {
-    "c_id": "63ff35af9e945e6c208d9c5d"
+    "c_id": "6407704d5a05ed62a1d66315"
   }
 }
 
@@ -145,7 +145,7 @@ PATCH http://localhost:3000/parkingspots/update
 Content-Type: application/json
 
 {
-  "p_id": "63ff35c79e945e6c208d9c67",
+  "p_id": "640757884eb96fde2d6689cf",
   "pa_address": {
     "a_houseno": "1"
   }
@@ -157,7 +157,7 @@ DELETE http://localhost:3000/parkingspots/delete
 Content-Type: application/json
 
 {
-  "p_id": "63ff35c79e945e6c208d9c67"
+  "p_id": "64076bda83c25a8241d7991b"
 }
 
 ###
@@ -177,9 +177,6 @@ Content-Type: application/json
 ###
 # Alle Parkingspots eines Users returnen
 GET http://localhost:3000/parkingspots/getUserParkingspots
-###
-# Alle Parkingspots eines Users returnen
-GET http://localhost:3000/parkingspots/getUserParkingspots
 
 ###
 #Reservation hinzufügen
@@ -187,9 +184,9 @@ POST http://localhost:3000/parkingspots/makeReservation
 Content-Type: application/json
 
 {
-  "p_id": "63ff35e99e945e6c208d9c7a",
+  "p_id": "640773a93ac3dcef440f8be2",
   "pr_reservation": {
-    "rc_car": "6404a084646327b3f73144cc",
+    "rc_car": "640773a43ac3dcef440f8be0",
     "rt_timeframe": {
       "t_dayfrom": 20230101,
       "t_dayuntil": 20230101,
@@ -206,8 +203,8 @@ DELETE http://localhost:3000/parkingspots/cancelReservation
 Content-Type: application/json
 
 {
-  "p_id": "63ff35e99e945e6c208d9c7a",
+  "p_id": "640773a93ac3dcef440f8be2",
   "pr_reservation": {
-    "r_id": "63ff362f25e1bda6da977d90"
+    "r_id": "640773b23ac3dcef440f8bea"
   }
 } 

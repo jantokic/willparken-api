@@ -234,12 +234,12 @@ router.delete("/deleteCar", checkLogin, getUser, getCar, async (req, res) => {
 
 // return a car that is passed in the request body
 router.post("/getCar", checkLogin, getUser, getCar, async (req, res) => {
-  res.send({ message: "Requested car:", content: res.car });
+  res.status(201).json({ message: "Requested car:", content: res.car });
 });
 
 // return all cars of the currently logged in user
 router.get("/getCars", getUser, async (req, res) => {
-  res.send({ message: "User's cars:", content: await res.user.uc_cars });
+  res.status(200).json({ message: "User's cars:", content: await res.user.uc_cars });
 });
 
 module.exports = router;

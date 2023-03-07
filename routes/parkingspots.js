@@ -1,5 +1,4 @@
 const express = require("express");
-const session = require("express-session");
 const router = express.Router();
 const mongoose = require('mongoose');
 
@@ -142,22 +141,21 @@ router.delete(
           .status(401)
           .json({ message: "Parkingspot does not belong to user." });
       }
-      // if the parking spot has reservations, the parking spot cannot be deleted
+
+      // if the parking spot has reservations that aren't cancelled, the parking spot cannot be deleted
       if (parkingspot.pr_reservations.length > 0) {
-        return res
-          .status(401)
-          .json({ message: "Parkingspot has reservations." });
+        for (const reservation of parkingspot.pr_reservations) {
+          if (reservation.r_status != "cancelled") {
+            return res.status(400).json({
+              message:
+                "Parkingspot cannot be deleted because it has active reservations.",
+            });
+          }
+        }
       }
 
-      // remove the parkingspot from mongodb
-      const deletedParkingspot = await parkingspot.remove();
-      // Remove the parkingspot ID from the user's up_parkingspots array
-      await User.updateOne(
-        { _id: req.session.u_id },
-        { $pull: { up_parkingspots: deletedParkingspot._id } }
-      );
       res.status(200).json({
-        message: "Parkingspot deleted.",
+        message: "Parkingspot deleted succesfully.",
         content: deletedParkingspot._id,
       });
     } catch (err) {
@@ -178,7 +176,7 @@ router.post("/search", async (req, res) => {
     });
     res
       .status(200)
-      .json({ message: "Parkingspots found:", parkingspots: parkingspots });
+      .json({ message: "Parkingspots found:", content: parkingspots });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -189,41 +187,47 @@ router.post(
   "/makeReservation",
   checkLogin,
   validateParkingspotInput,
+  getUser,
   async (req, res) => {
     try {
       const parkingspot = await Parkingspot.findById(req.body.p_id);
       // check if the parkingspot exists
       if (parkingspot) {
-        // create a reservation
-        req.body.pr_reservation.ru_user = req.session.u_id;
-        req.body.pr_reservation._id = mongoose.Types.ObjectId();
-        const reservation = req.body.pr_reservation;
-
-        // add reservation to user array
-        await User.updateOne(
-          { _id: req.session.u_id },
-          { $push: { ur_reservations: { reservationid: reservation._id, parkingspotid: parkingspot._id } } }
-        );
-
-        // add the reservation to the parkingspot
-        parkingspot.pr_reservations.push(reservation);
-        await parkingspot.save();
-
-        res.status(201).json({
-          message: "Reservation added.",
-          content: reservation,
-        });
-
-        /*// send a notification to the owner of the parkingspot
-        const notification = new Notification({
-          n_user: parkingspot.p_owner,
-          n_content: `User ${req.user.u_username} has reserved your parkingspot ${parkingspot.p_number}.`,
-        });
-        await notification.save();
-        */
-      } else {
-        res.status(404).json({ message: "Parkingspot not found." });
+        return res.status(404).json({ message: "Parkingspot not found." });
       }
+      // create a reservation
+      req.body.pr_reservation.ru_user = req.session.u_id;
+      req.body.pr_reservation._id = mongoose.Types.ObjectId();
+      const reservation = req.body.pr_reservation;
+
+      // check if the car exists
+      let car;
+      res.user.uc_cars.forEach((c) => {
+        if (c._id == reservation.rc_car) {
+          car = c;
+        }
+      });
+      if (!car) {
+        return res.status(404).json({ message: "Car not found." });
+      }
+
+      // add the reservation to the parkingspot
+      parkingspot.pr_reservations.push(reservation);
+      await parkingspot.save();
+
+      // add reservation to user array
+      res.user.ur_reservations.push(reservation);
+
+      // set the car to reserved
+      car.c_isreserved = true;
+
+      // save the user
+      await res.user.save();
+
+      res.status(201).json({
+        message: "Reservation added succesfully.",
+        content: reservation,
+      });
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
@@ -235,6 +239,7 @@ router.delete(
   "/cancelReservation",
   checkLogin,
   validateParkingspotInput,
+  getUser,
   async (req, res) => {
     try {
 
@@ -248,7 +253,7 @@ router.delete(
       const reservation = parkingspot.pr_reservations.find(
         (reservation) => reservation._id == req.body.pr_reservation.r_id
       );
-      
+
       if (!reservation) {
         return res.status(404).json({ message: "Reservation not found." });
       }
@@ -260,19 +265,40 @@ router.delete(
           .json({ message: "Reservation does not belong to user." });
       }
 
+      // check if the reservation is already cancelled
+      if (reservation.r_cancelled) {
+        return res.status(401).json({ message: "Reservation already cancelled." });
+      }
 
-      // Remove the reservation from the parkingspot
+      //  update the parkingspot's reservations, dont' delete the reservation, just set it to cancelled
       await Parkingspot.updateOne(
-        { _id: req.body.p_id },
-        { $pull: { pr_reservations: reservation } }
+        { _id: parkingspot._id },
+        { $set: { "pr_reservations.$[element].r_cancelled": true } },
+        { arrayFilters: [{ "element._id": reservation._id }] }
       );
 
-      // remove the reservation ID from the user's ur_reservations array
-      await User.updateOne(
-        { _id: req.session.u_id },
-        { $pull: { ur_reservations: reservation } }
-      );
-      res.status(200).json({ message: "Reservation cancelled." });
+      // go through the user's reservations that are not cancelled and check if the car has other reservations
+      // if the car doesn't have other reservations, set c_isreserved to false
+
+      const car = res.user.uc_cars.find((c) => c._id == reservation.rc_car);
+      let hasOtherReservations = false;
+      res.user.ur_reservations.forEach((userReservation) => {
+        if (
+          userReservation.rc_car == car._id &&
+          !userReservation.r_cancelled
+        ) {
+          hasOtherReservations = true;
+        }
+      });
+      if (!hasOtherReservations) {
+        car.c_isreserved = false;
+      }
+
+      // save the user
+      await res.user.save();
+
+      res.status(200).json({ message: "Reservation cancelled successfully." });
+
     } catch (err) {
       res.status(500).json({ message: err.message });
     }

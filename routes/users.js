@@ -213,9 +213,15 @@ router.patch("/updateCar", getUser, getCar, async (req, res) => {
 
 // deletes a car that is passed in the request body
 router.delete("/deleteCar", checkLogin, getUser, getCar, async (req, res) => {
-  // delete car out of user's array
-  res.user.uc_cars.splice(res.user.uc_cars.indexOf(res.car), 1);
   try {
+    // check if the car is currently reserved
+    if (res.car.c_isreserved) {
+      return res.status(409).json({ message: "Car is currently reserved." });
+    }
+
+    // otherwise, delete car out of user's array
+    res.user.uc_cars.splice(res.user.uc_cars.indexOf(res.car), 1);
+
     // save changes in mongodb
     const updatedUser = await res.user.save();
     res
@@ -227,13 +233,12 @@ router.delete("/deleteCar", checkLogin, getUser, getCar, async (req, res) => {
 });
 
 // return a car that is passed in the request body
-router.post("/getCar", getUser, getCar, async (req, res) => {
+router.post("/getCar", checkLogin, getUser, getCar, async (req, res) => {
   res.send({ message: "Requested car:", content: res.car });
 });
 
 // return all cars of the currently logged in user
 router.get("/getCars", getUser, async (req, res) => {
-  res.send({ message: "User's cars:", content: await res.user.uc_cars });
   res.send({ message: "User's cars:", content: await res.user.uc_cars });
 });
 

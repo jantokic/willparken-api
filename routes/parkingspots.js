@@ -1,10 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const mongoose = require('mongoose');
+const { format, parse, isWithinInterval } = require('date-fns');
+const { body } = require("express-validator");
+
 
 const Parkingspot = require("../models/parkingspot");
 const User = require("../models/user");
-const { body, validationResult } = require("express-validator");
 
 
 const {
@@ -41,6 +42,7 @@ router.post("/add", [
   body("u_lastname").isLength({ min: 2 }),
   body("u_password").isLength({ min: 8 }),
 ], checkLogin, async (req, res) => {
+
   // create a new parkingspot
   const newParkingspot = new Parkingspot({
     p_owner: req.session.u_id,
@@ -65,7 +67,7 @@ router.post("/add", [
   }
 });
 
-// Parkplatz aktualisieren
+// update a parkingspot
 router.patch(
   "/update",
   checkLogin,
@@ -73,60 +75,40 @@ router.patch(
   async (req, res) => {
     try {
       const parkingspot = await Parkingspot.findById(req.body.p_id);
-      if (parkingspot) {
-        // Update the parkingspot
-        const parkingspotFields = ["p_number", "p_priceperhour", "p_tags"];
-        const availabilityFields = [
-          "t_weekday",
-          "t_dayfrom",
-          "t_dayuntil",
-          "t_timefrom",
-          "t_timeuntil",
-        ];
-        const addressFields = [
-          "a_country",
-          "a_city",
-          "a_zip",
-          "a_street",
-          "a_houseno",
-          "a_longitude",
-          "a_latitude",
-        ];
-        for (const field of parkingspotFields) {
-          if (req.body[field] !== undefined) {
-            parkingspot[field] = req.body[field];
-          }
-        }
-        if (req.body.pa_address) {
-          for (const field of addressFields) {
-            if (req.body.pa_address[field] !== undefined) {
-              parkingspot.pa_address[field] = req.body.pa_address[field];
-            }
-          }
-        }
-        if (req.body.pt_availability) {
-          for (const field of availabilityFields) {
-            if (req.body.pt_availability[field] !== undefined) {
-              parkingspot.pt_availability[field] =
-                req.body.pt_availability[field];
-            }
-          }
-        }
-        const updatedParkingspot = await parkingspot.save();
-        res.status(200).json({
-          message: "Parkingspot updated.",
-          content: updatedParkingspot,
-        });
-      } else {
-        res.status(404).json({ message: "Parkingspot not found." });
+      if (!parkingspot) {
+        return res.status(404).json({ message: "Parkingspot not found." });
       }
-    } catch (err) {
+
+      let status = parkingspot.p_status;
+      // Update the parkingspot
+      const updatedParkingspot = await Parkingspot.findByIdAndUpdate(
+        req.body.p_id,
+        req.body,
+        { new: true }
+      );
+
+      // check if the parkingspot was set to inactive
+      if (status == "active" && updatedParkingspot.p_status == "inactive") {
+        //setParkingspotInactive(req.body.p_id);
+      }
+      // check if the parkingspot was set to active
+      if (status == "inactive" && updatedParkingspot.p_status == "active") {
+        //setParkingspotActive(req.body.p_id);
+      }
+
+      res.status(200).json({
+        message: "Parkingspot updated.",
+        content: updatedParkingspot,
+      });
+    }
+    catch (err) {
       res.status(500).json({ message: err.message });
     }
   }
 );
 
-// Parkplatz löschen
+
+// delete a parkingspot
 router.delete(
   "/delete",
   checkLogin,
@@ -185,7 +167,7 @@ router.post("/search", async (req, res) => {
   }
 });
 
-// reserve a parkingspot
+// make a reservation
 router.post(
   "/makeReservation",
   checkLogin,
@@ -200,7 +182,6 @@ router.post(
       }
       // create a reservation
       req.body.pr_reservation.ru_user = req.session.u_id;
-      req.body.pr_reservation._id = mongoose.Types.ObjectId();
       const reservation = req.body.pr_reservation;
 
       // check if the car exists
@@ -214,16 +195,81 @@ router.post(
         return res.status(404).json({ message: "Car not found." });
       }
 
+      // get all of the user's reservations
+      let reservations = [];
+      for (const r of res.user.ur_reservations) {
+        const p = await Parkingspot.findById(r.parkingspotid);
+        if (p) {
+          for (const pRes of p.pr_reservations) {
+            if (pRes._id.toString() === r.reservationid.toString()) {
+              if (pRes.rc_car.toString() === reservation.rc_car.toString()) {
+                reservations.push(pRes);
+              }
+            }
+          }
+        }
+      }
+
+      // iterate over the found reservations and check if at that time the car is already reserved
+      for (const r of reservations) {
+
+        // convert start and end times to valid time strings using date-fns
+        const startTimeMinutes = r.rt_timeframe.t_timefrom;
+        const startTime = format(parse(`${r.rt_timeframe.t_dayfrom} ${Math.floor(startTimeMinutes / 60)}:${startTimeMinutes % 60}`, 'yyyyMMdd H:mm', new Date()), 'yyyy-MM-dd HH:mm');
+
+        const endTimeMinutes = r.rt_timeframe.t_timeuntil;
+        const endTime = format(parse(`${r.rt_timeframe.t_dayuntil} ${Math.floor(endTimeMinutes / 60)}:${endTimeMinutes % 60}`, 'yyyyMMdd H:mm', new Date()), 'yyyy-MM-dd HH:mm');
+
+        // create Date objects from start and end times
+        const rStart = new Date(startTime);
+        const rEnd = new Date(endTime);
+
+        // convert start and end times to valid time strings using date-fns
+        const resStartTimeMinutes = reservation.rt_timeframe.t_timefrom;
+        const resStartTime = format(parse(`${reservation.rt_timeframe.t_dayfrom} ${Math.floor(resStartTimeMinutes / 60)}:${resStartTimeMinutes % 60}`, 'yyyyMMdd H:mm', new Date()), 'yyyy-MM-dd HH:mm');
+
+        const resEndTimeMinutes = reservation.rt_timeframe.t_timeuntil;
+        const resEndTime = format(parse(`${reservation.rt_timeframe.t_dayuntil} ${Math.floor(resEndTimeMinutes / 60)}:${resEndTimeMinutes % 60}`, 'yyyyMMdd H:mm', new Date()), 'yyyy-MM-dd HH:mm');
+        const resStart = new Date(resStartTime);
+        const resEnd = new Date(resEndTime);
+
+
+        if (
+          isWithinInterval(resStart, { start: rStart, end: rEnd }) ||
+          isWithinInterval(resEnd, { start: rStart, end: rEnd }) ||
+          isWithinInterval(rStart, { start: resStart, end: resEnd }) ||
+          isWithinInterval(rEnd, { start: resStart, end: resEnd })
+        ) {
+          return res.status(400).json({
+            message: "Car is already reserved at that time.",
+          });
+        }
+      }
+
+
       // add the reservation to the parkingspot
       parkingspot.pr_reservations.push(reservation);
       await parkingspot.save();
 
+      // fetch the updated parkingspot
+      const updatedParkingspot = await Parkingspot.findById(parkingspot._id);
+
+      let newReservationId;
+      // get the reservation id of the reservation that was just added
+      for (const res of updatedParkingspot.pr_reservations) {
+        if (res.rc_car.toString() === reservation.rc_car.toString() && res.rt_timeframe.t_dayfrom === reservation.rt_timeframe.t_dayfrom && res.rt_timeframe.t_dayuntil === reservation.rt_timeframe.t_dayuntil && res.rt_timeframe.t_timefrom === reservation.rt_timeframe.t_timefrom && res.rt_timeframe.t_timeuntil === reservation.rt_timeframe.t_timeuntil) {
+          newReservationId = res._id;
+        }
+      }
+
       // add reservation to user array
-      res.user.ur_reservations.push(reservation);
+      res.user.ur_reservations.push({
+        parkingspotid: parkingspot._id,
+        reservationid: newReservationId,
+      });
 
       // set the car to reserved
       car.c_isreserved = true;
-
       // save the user
       await res.user.save();
 
@@ -288,7 +334,7 @@ router.delete(
           car = c;
         }
       });
-      
+
       let hasOtherReservations = false;
       res.user.ur_reservations.forEach((userReservation) => {
         if (

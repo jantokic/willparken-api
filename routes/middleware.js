@@ -30,7 +30,6 @@ const getCar = async (req, res, next) => {
       }
     });
     if (car) {
-        console.log(car);
         res.car = car;
         next();
     }

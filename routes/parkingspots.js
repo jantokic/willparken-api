@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { format, parse, isWithinInterval } = require('date-fns');
+const { format, parse, isWithinInterval, differenceInMinutes } = require('date-fns');
 const { body } = require("express-validator");
 
 
@@ -35,13 +35,16 @@ router.get("/getUserParkingspots", checkLogin, getUser, async (req, res) => {
 });
 
 // adds a parkingspot to user
-router.post("/add", [
-  body("u_email").isEmail(),
-  body("u_username").isLength({ min: 3 }),
-  body("u_firstname").isLength({ min: 2 }),
-  body("u_lastname").isLength({ min: 2 }),
-  body("u_password").isLength({ min: 8 }),
-], checkLogin, async (req, res) => {
+router.post("/add", checkLogin, async (req, res) => {
+  // check if parkingspot is located in austria or germany
+  if (
+    req.body.pa_address.a_country != "Austria" &&
+    req.body.pa_address.a_country != "Germany"
+  ) {
+    return res.status(400).json({
+      message: "Parkingspot must be located in Austria or Germany.",
+    });
+  }
 
   // create a new parkingspot
   const newParkingspot = new Parkingspot({
@@ -195,15 +198,17 @@ router.post(
         return res.status(404).json({ message: "Car not found." });
       }
 
-      // get all of the user's reservations
+      // get all of the user's reservations that aren't cancelled
       let reservations = [];
       for (const r of res.user.ur_reservations) {
         const p = await Parkingspot.findById(r.parkingspotid);
         if (p) {
           for (const pRes of p.pr_reservations) {
-            if (pRes._id.toString() === r.reservationid.toString()) {
-              if (pRes.rc_car.toString() === reservation.rc_car.toString()) {
-                reservations.push(pRes);
+            if (pRes.r_cancelled == false) {
+              if (pRes._id.toString() === r.reservationid.toString()) {
+                if (pRes.rc_car.toString() === reservation.rc_car.toString()) {
+                  reservations.push(pRes);
+                }
               }
             }
           }
@@ -246,6 +251,33 @@ router.post(
         }
       }
 
+      // check how much time is left until the reservation starts
+      const startTimeMinutes = reservation.rt_timeframe.t_timefrom;
+      const startTime = format(parse(`${reservation.rt_timeframe.t_dayfrom} ${Math.floor(startTimeMinutes / 60)}:${startTimeMinutes % 60}`, 'yyyyMMdd H:mm', new Date()), 'yyyy-MM-dd HH:mm');
+      const start = new Date(startTime);
+      const now = new Date();
+      const timeLeft = differenceInMinutes(start, now);
+
+      // if the reservation is in the next 24 hours, set reservation.r_critcanceltime to "h"
+      if (timeLeft <= 1440) {
+        reservation.r_critcanceltime = "h";
+      }
+
+      // if the reservation is in the next week, set reservation.r_critcanceltime to "d"
+      if (timeLeft <= 10080 && timeLeft > 1440) {
+        reservation.r_critcanceltime = "d";
+      }
+
+      // if the reservation is in the next month, set reservation.r_critcanceltime to "w"
+      if (timeLeft <= 129600 && timeLeft > 10080) {
+        reservation.r_critcanceltime = "w";
+      }
+
+      // if the reservation is in more than 3 months, set reservation.r_critcanceltime to "m"
+      if (timeLeft > 129600) {
+        reservation.r_critcanceltime = "m";
+      }
+      console.log(reservation.r_critcanceltime);
 
       // add the reservation to the parkingspot
       parkingspot.pr_reservations.push(reservation);
@@ -318,6 +350,35 @@ router.delete(
       if (reservation.r_cancelled) {
         return res.status(401).json({ message: "Reservation already cancelled." });
       }
+
+      // check if the cancellation time has passed
+      const startTimeMinutes = reservation.rt_timeframe.t_timefrom;
+      const startTime = format(parse(`${reservation.rt_timeframe.t_dayfrom} ${Math.floor(startTimeMinutes / 60)}:${startTimeMinutes % 60}`, 'yyyyMMdd H:mm', new Date()), 'yyyy-MM-dd HH:mm');
+      const start = new Date(startTime);
+      const now = new Date();
+      const timeLeft = differenceInMinutes(start, now);
+      console.log(timeLeft);
+
+      // one hour left
+      if (reservation.r_critcanceltime === "h" && timeLeft <= 60) {
+        return res.status(401).json({ message: "Cancellation time has passed." });
+      }
+
+      // one day left
+      if (reservation.r_critcanceltime === "d" && timeLeft <= 1440 && timeLeft > 60) {
+        return res.status(401).json({ message: "Cancellation time has passed." });
+      }
+
+      // one week left
+      if (reservation.r_critcanceltime === "w" && timeLeft <= 10080 && timeLeft > 1440) {
+        return res.status(401).json({ message: "Cancellation time has passed." });
+      }
+
+      // one month left
+      if (reservation.r_critcanceltime === "m" && timeLeft <= 43200 && timeLeft > 10080) {
+        return res.status(401).json({ message: "Cancellation time has passed." });
+      }
+
 
       //  update the parkingspot's reservations, dont' delete the reservation, just set it to cancelled
       await Parkingspot.updateOne(

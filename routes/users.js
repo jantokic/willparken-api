@@ -191,6 +191,10 @@ router.post("/addCar", checkLogin, getUser, async (req, res) => {
 // updates a car of the currently logged in user
 router.patch("/updateCar", getUser, getCar, async (req, res) => {
   try {
+    if (res.car.c_isreserved) {
+      return res.status(409).json({ message: "Car is currently reserved." });
+    }
+
     // only update properties that have been passed in the request body
     for (let prop in req.body.c_car) {
       if (req.body.c_car[prop] !== null) {

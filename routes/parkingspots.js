@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { format, parse, isWithinInterval, differenceInMinutes } = require('date-fns');
+const axios = require('axios');
 const { body } = require("express-validator");
 
 
@@ -26,8 +27,24 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Returned alle Parkingspots eines Users
-router.get("/getUserParkingspots", checkLogin, getUser, async (req, res) => {
+// returns single parkingspot by id
+router.post("/getParkingspot", async (req, res) => {
+  try {
+    const parkingspot = await Parkingspot.findById(req.body.p_id);
+    if (!parkingspot) {
+      return res.status(404).json({ message: "Parkingspot not found." });
+    }
+    res.send({
+      message: "Parkingspot found:",
+      content: parkingspot,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// returns all parkingspots of a user
+router.get("/getParkingspots", checkLogin, getUser, async (req, res) => {
   res.send({
     message: "User's parkingspots:",
     content: await Parkingspot.find({ p_owner: req.session.u_id }),
@@ -92,15 +109,11 @@ router.patch(
 
       // check if the parkingspot was set to inactive
       if (status == "active" && updatedParkingspot.p_status == "inactive") {
-        //setParkingspotInactive(req.body.p_id);
-      }
-      // check if the parkingspot was set to active
-      if (status == "inactive" && updatedParkingspot.p_status == "active") {
-        //setParkingspotActive(req.body.p_id);
+        return await setParkingspotInactive(req, res);
       }
 
       res.status(200).json({
-        message: "Parkingspot updated.",
+        message: 'Parkingspot updated.',
         content: updatedParkingspot,
       });
     }
@@ -110,6 +123,90 @@ router.patch(
   }
 );
 
+// set a parkingspot to inactive
+setParkingspotInactive = async (req, res) => {
+  let cancelledCount = 0;
+  let remainingCount = 0;
+  let activeReservations = [];
+  const furthestEnd = new Date();
+  try {
+    // call the cancelPossibleReservations function, which cancels all reservations of the parkingspot
+    // returns the number of cancelled and remaining reservations and an array of the active remaining reservations
+    const response = await cancelPossibleReservations(req, res);
+    cancelledCount = response.cancelledCount;
+    remainingCount = response.remainingCount;
+    activeReservations = response.activeReservations;
+
+    // check if there are remaining reservations
+    if (activeReservations) {
+      // find the reservation, that is the furthest in the future
+      let furthestReservation = activeReservations[0];
+
+      for (const reservation of activeReservations) {
+        const endTimeMinutes = reservation.rt_timeframe.t_timeuntil;
+        const endTime = format(parse(`${reservation.rt_timeframe.t_dayuntil} ${Math.floor(endTimeMinutes / 60)}:${endTimeMinutes % 60}`, 'yyyyMMdd H:mm', new Date()), 'yyyy-MM-dd HH:mm');
+        const end = new Date(endTime);
+
+        const furthestEndTimeMinutes = furthestReservation.rt_timeframe.t_timeuntil;
+        const furthestEndTime = format(parse(`${furthestReservation.rt_timeframe.t_dayuntil} ${Math.floor(furthestEndTimeMinutes / 60)}:${furthestEndTimeMinutes % 60}`, 'yyyyMMdd H:mm', new Date()), 'yyyy-MM-dd HH:mm');
+        furthestEnd = new Date(furthestEndTime);
+
+        if (end > furthestEnd) {
+          furthestReservation = reservation;
+        }
+      }
+
+      // format furthestEnd
+      furthestEnd = format(furthestEnd, 'yyyy-MM-dd HH:mm');
+      return res.status(200).json({
+        message: "Parkingspot set to inactive. Cancelled " + cancelledCount + " reservations and " + remainingCount + " reservations remain active until " + furthestEnd + ".",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Parkingspot set to inactive. Cancelled " + cancelledCount + " reservations.",
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+cancelPossibleReservations = async (req, res) => {
+  let cancelledCount = 0;
+  let remainingCount = 0;
+  let activeReservations = [];
+
+  try {
+    // get the parkingspot
+    const parkingspot = await Parkingspot.findById(req.body.p_id);
+
+    // go through all reservations of the parkingspot and cancel them by calling the cancelReservation route
+    for (const reservation of parkingspot.pr_reservations) {
+      try {
+        const response = await axios.patch("http://localhost:3000/parkingspots/cancelReservation", {
+          "p_id": req.body.p_id,
+          "pr_reservation": {
+            "r_id": reservation._id
+          },
+          "u_id": req.session.u_id
+        });
+        if (response.data.message === "Reservation cancelled succesfully.") {
+          cancelledCount++;
+        } else {
+          remainingCount++;
+          activeReservations.push(reservation);
+        }
+      } catch (err) {
+        console.error(err);
+        remainingCount++;
+      }
+    }
+    return { cancelledCount, remainingCount, activeReservations };
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
 // delete a parkingspot
 router.delete(
@@ -117,35 +214,57 @@ router.delete(
   checkLogin,
   validateParkingspotInput,
   async (req, res) => {
+    let cancelledCount = 0;
+    let remainingCount = 0;
+    let activeReservations = [];
+    furthestEnd = new Date();
     try {
-      // check if the parkingspot exists
-      const parkingspot = await Parkingspot.findById(req.body.p_id);
-      if (!parkingspot) {
+      // set the parkingspot status to deleted
+      const updatedParkingspot = await Parkingspot.findByIdAndUpdate(
+        req.body.p_id,
+        { p_status: "deleted" },
+        { new: true }
+      );
+      if (!updatedParkingspot) {
         return res.status(404).json({ message: "Parkingspot not found." });
       }
-      // check if the parkingspot belongs to the user
-      if (parkingspot.p_owner != req.session.u_id) {
-        return res
-          .status(401)
-          .json({ message: "Parkingspot does not belong to user." });
-      }
+      
+      // call the cancelPossibleReservations function, which cancels all reservations of the parkingspot
+      response = await cancelPossibleReservations(req, res);
+      cancelledCount = response.cancelledCount;
+      remainingCount = response.remainingCount;
+      activeReservations = response.activeReservations;
 
-      // if the parking spot has reservations that aren't cancelled, the parking spot cannot be deleted
-      if (parkingspot.pr_reservations.length > 0) {
-        for (const reservation of parkingspot.pr_reservations) {
-          if (reservation.r_status != "cancelled") {
-            return res.status(400).json({
-              message:
-                "Parkingspot cannot be deleted because it has active reservations.",
-            });
+      // check if there are remaining reservations
+      if (activeReservations) {
+        // find the reservation, that is the furthest in the future
+        let furthestReservation = activeReservations[0];
+
+        for (const reservation of activeReservations) {
+          const endTimeMinutes = reservation.rt_timeframe.t_timeuntil;
+          const endTime = format(parse(`${reservation.rt_timeframe.t_dayuntil} ${Math.floor(endTimeMinutes / 60)}:${endTimeMinutes % 60}`, 'yyyyMMdd H:mm', new Date()), 'yyyy-MM-dd HH:mm');
+          const end = new Date(endTime);
+
+          const furthestEndTimeMinutes = furthestReservation.rt_timeframe.t_timeuntil;
+          const furthestEndTime = format(parse(`${furthestReservation.rt_timeframe.t_dayuntil} ${Math.floor(furthestEndTimeMinutes / 60)}:${furthestEndTimeMinutes % 60}`, 'yyyyMMdd H:mm', new Date()), 'yyyy-MM-dd HH:mm');
+          furthestEnd = new Date(furthestEndTime);
+
+          if (end > furthestEnd) {
+            furthestReservation = reservation;
           }
         }
-      }
 
-      res.status(200).json({
-        message: "Parkingspot deleted succesfully.",
-        content: deletedParkingspot._id,
+        // format furthestEnd
+        furthestEnd = format(furthestEnd, 'yyyy-MM-dd HH:mm');
+
+        return res.status(200).json({
+          message: "Parkingspot will be deleted on: " + furthestEnd + " .Cancelled " + cancelledCount + " reservations and " + remainingCount + " reservations remain active.",
+        });
+      }
+      return res.status(200).json({
+        message: "Parkingspot has been deleted. Cancelled " + cancelledCount + " reservations.",
       });
+
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
@@ -182,6 +301,9 @@ router.post(
       // check if the parkingspot exists
       if (!parkingspot) {
         return res.status(404).json({ message: "Parkingspot not found." });
+      }
+      if (!parkingspot.p_status == "active") {
+        return res.status(400).json({ message: "Parkingspot is not active." });
       }
       // create a reservation
       req.body.pr_reservation.ru_user = req.session.u_id;
@@ -263,13 +385,13 @@ router.post(
         reservation.r_critcanceltime = "h";
       }
 
-      // if the reservation is in the next week, set reservation.r_critcanceltime to "d"
-      if (timeLeft <= 10080 && timeLeft > 1440) {
+      // if the reservation is in less than a month, set reservation.r_critcanceltime to "d"
+      if (timeLeft <= 43200 && timeLeft > 1440) {
         reservation.r_critcanceltime = "d";
       }
 
-      // if the reservation is in the next month, set reservation.r_critcanceltime to "w"
-      if (timeLeft <= 129600 && timeLeft > 10080) {
+      // if the reservation is in 1 to 3 months, set reservation.r_critcanceltime to "w"
+      if (timeLeft > 43200 && timeLeft <= 129600) {
         reservation.r_critcanceltime = "w";
       }
 
@@ -277,8 +399,6 @@ router.post(
       if (timeLeft > 129600) {
         reservation.r_critcanceltime = "m";
       }
-      console.log(reservation.r_critcanceltime);
-
       // add the reservation to the parkingspot
       parkingspot.pr_reservations.push(reservation);
       await parkingspot.save();
@@ -316,14 +436,16 @@ router.post(
 );
 
 // Cancel a reservation
-router.delete(
+router.patch(
   "/cancelReservation",
-  checkLogin,
   validateParkingspotInput,
-  getUser,
   async (req, res) => {
-    try {
+    req.session.u_id = req.body.u_id;
 
+    await checkLogin(req, res, () => { });
+    await getUser(req, res, () => { });
+
+    try {
       // check if the parkingspot exists
       const parkingspot = await Parkingspot.findById(req.body.p_id);
       if (!parkingspot) {
@@ -339,13 +461,6 @@ router.delete(
         return res.status(404).json({ message: "Reservation not found." });
       }
 
-      // Check if the reservation belongs to the user
-      if (reservation.ru_user != req.session.u_id) {
-        return res
-          .status(401)
-          .json({ message: "Reservation does not belong to user." });
-      }
-
       // check if the reservation is already cancelled
       if (reservation.r_cancelled) {
         return res.status(401).json({ message: "Reservation already cancelled." });
@@ -357,7 +472,6 @@ router.delete(
       const start = new Date(startTime);
       const now = new Date();
       const timeLeft = differenceInMinutes(start, now);
-      console.log(timeLeft);
 
       // one hour left
       if (reservation.r_critcanceltime === "h" && timeLeft <= 60) {
@@ -365,17 +479,17 @@ router.delete(
       }
 
       // one day left
-      if (reservation.r_critcanceltime === "d" && timeLeft <= 1440 && timeLeft > 60) {
+      if (reservation.r_critcanceltime === "d" && timeLeft <= 1440) {
         return res.status(401).json({ message: "Cancellation time has passed." });
       }
 
       // one week left
-      if (reservation.r_critcanceltime === "w" && timeLeft <= 10080 && timeLeft > 1440) {
+      if (reservation.r_critcanceltime === "w" && timeLeft <= 10080) {
         return res.status(401).json({ message: "Cancellation time has passed." });
       }
 
       // one month left
-      if (reservation.r_critcanceltime === "m" && timeLeft <= 43200 && timeLeft > 10080) {
+      if (reservation.r_critcanceltime === "m" && timeLeft <= 43200) {
         return res.status(401).json({ message: "Cancellation time has passed." });
       }
 
@@ -386,6 +500,7 @@ router.delete(
         { $set: { "pr_reservations.$[element].r_cancelled": true } },
         { arrayFilters: [{ "element._id": reservation._id }] }
       );
+
 
       // go through the user's reservations that are not cancelled and check if the car has other reservations
       // if the car doesn't have other reservations, set c_isreserved to false
@@ -408,16 +523,116 @@ router.delete(
       if (!hasOtherReservations) {
         car.c_isreserved = false;
       }
-
       // save the user
       await res.user.save();
 
-      res.status(200).json({ message: "Reservation cancelled successfully." });
-
+      res.status(200).json({
+        message: "Reservation cancelled succesfully.",
+        content: reservation,
+      });
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
   }
 );
+
+// get a single reservation by id
+router.get(
+  "/getReservation",
+  checkLogin,
+  getUser,
+  async (req, res) => {
+    try {
+      // get the reservation of the user
+      let reservation;
+      for (const r of res.user.ur_reservations) {
+        if (r.reservationid == req.body.r_id) {
+          reservation = r;
+        }
+      }
+      if (!reservation) {
+        return res.status(404).json({ message: "Reservation not found." });
+      }
+      // find the reservation in the parkingspot
+      const parkingspot = await Parkingspot.findById(reservation.parkingspotid);
+      if (!parkingspot) {
+        return res.status(404).json({ message: "Parkingspot not found." });
+      }
+      let reservationFound;
+      for (const r of parkingspot.pr_reservations) {
+        if (r._id == reservation.reservationid) {
+          reservationFound = r;
+        }
+      }
+      if (!reservationFound) {
+        return res.status(404).json({ message: "Reservation not found." });
+      }
+      res.status(200).json({
+        message: "Reservation found: ",
+        content: reservationFound,
+      });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+// get all reservations of a parkingspot
+router.post(
+  "/getParkingspotReservations",
+  checkLogin,
+  getUser,
+  async (req, res) => {
+    try {
+      // get the parkingspot 
+      const parkingspot = await Parkingspot.findById(req.body.p_id);
+      if (!parkingspot) {
+        return res.status(404).json({ message: "Parkingspot not found." });
+      }
+      // get all of the parkingspot's reservations
+      let reservations = [];
+      for (const r of parkingspot.pr_reservations) {
+        reservations.push(r);
+      }
+      if (reservations.length === 0) {
+        return res.status(404).json({ message: "No reservations found." });
+      }
+      res.status(200).json({
+        message: "Reservations found: ",
+        content: reservations,
+      });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  }
+);
+
+
+// Get all reservations of a user
+router.get("/getReservations", checkLogin, getUser, async (req, res) => {
+  try {
+    // get all of the user's reservations
+    let reservations = [];
+    for (const r of res.user.ur_reservations) {
+      const p = await Parkingspot.findById(r.parkingspotid);
+      if (p) {
+        for (const pRes of p.pr_reservations) {
+          if (pRes._id.toString() === r.reservationid.toString()) {
+            reservations.push(pRes);
+          }
+        }
+      }
+    }
+    if (reservations.length === 0) {
+      return res.status(404).json({ message: "No reservations found." });
+    }
+    res.status(200).json({
+      message: "Reservations found: ",
+      content: reservations,
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 module.exports = router;

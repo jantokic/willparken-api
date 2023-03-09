@@ -52,7 +52,7 @@ const checkLogin = async (req, res, next) => {
 };
 
 // Middelware to validate Inputs for Parkingspots
-const validateParkingspotInput = [
+const validateParkingspotInput = [ 
   body("p_id").exists().withMessage("Parkingspot id is required."),
   (req, res, next) => {
     const errors = validationResult(req);

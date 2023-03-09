@@ -1,12 +1,3 @@
-###
-#Alle User returnen
-GET http://localhost:3000/users
-
-###
-#Alle Parkingspots returnen
-GET http://localhost:3000/parkingspots
-
-
 ### USER ROUTEN ###
 
 ###
@@ -38,24 +29,6 @@ Content-Type: application/json
 }
 
 ###
-#User ausloggen
-GET http://localhost:3000/users/logout
-
-###
-#User aktualisieren
-PATCH http://localhost:3000/users/update
-Content-Type: application/json
-
-{
-  "u_password": "newpassword"
-}
-
-###
-#User löschen
-DELETE http://localhost:3000/users/delete
-
-
-###
 #Car hinzufügen
 POST http://localhost:3000/users/addCar
 Content-Type: application/json
@@ -68,50 +41,8 @@ Content-Type: application/json
   }
 }
 
-###
-#Car aktualisieren
-PATCH http://localhost:3000/users/updateCar
-Content-Type: application/json
-
-{
-  "c_car": {
-    "c_id": "6407576c4eb96fde2d6689c8",
-    "c_brand": "BMW",
-    "c_model": "M3"
-  }
-}
-
-###
-#Car löschen
-DELETE http://localhost:3000/users/deleteCar
-Content-Type: application/json
-
-{
-  "c_car": {
-    "c_id": "640870af723d7c901b96b844"
-  }
-}
-
-
-###
-# Bestimmtes Car eines Users returnen
-POST http://localhost:3000/users/getCar
-Content-Type: application/json
-
-{
-  "c_car": {
-    "c_id": "6407b64b63e0b13c14017741"
-  }
-}
-
-###
-#Alle Cars eines Users returnen
-GET http://localhost:3000/users/getCars
-
-
 
 ### PARKINGSPOT ROUTEN ###
-
 ###
 #Parkingspot hinzufügen
 POST http://localhost:3000/parkingspots/add
@@ -123,6 +54,7 @@ Content-Type: application/json
   "p_tags": [
     "Ladestation"
   ],
+  "p_status": "active",
   "pt_availability": {
     "t_weekday": [6,7],
     "t_dayfrom": 20230101,
@@ -146,7 +78,7 @@ PATCH http://localhost:3000/parkingspots/update
 Content-Type: application/json
 
 {
-  "p_id": "640a1cf2ee82de265df86f65",
+  "p_id": "6408b55164bcda5b88a9a5c3",
   "p_number": "4",
   "p_priceperhour": 15,
   "p_tags": [
@@ -170,39 +102,6 @@ Content-Type: application/json
 }
 
 ###
-#Parkingspot löschen
-DELETE http://localhost:3000/parkingspots/delete
-Content-Type: application/json
-
-{
-  "p_id": "640a1cf2ee82de265df86f65"
-}
-
-###
-#Parkplatz suchen
-POST http://localhost:3000/parkingspots/search
-Content-Type: application/json
-
-{
-  "pa_address": {
-    "a_country": "Austria",
-    "a_city": "Wels",
-    "a_zip": "4600",
-    "a_street": "Fischergasse"
-  }
-}
-
-###
-# Bestimmten Parkingspot returnen
-POST http://localhost:3000/parkingspots/getParkingspot
-Content-Type: application/json
-
-{
-  "p_id": "6409e64f2a6e8d1dc5ed1cb0"
-}
-
-
-###
 # Alle Parkingspots eines Users returnen
 GET http://localhost:3000/parkingspots/getParkingspots
 
@@ -212,21 +111,21 @@ POST http://localhost:3000/parkingspots/makeReservation
 Content-Type: application/json
 
 {
-  "p_id": "640a1cf2ee82de265df86f65",
+  "p_id": "6408b55164bcda5b88a9a5c3",
   "pr_reservation": {
-    "rc_car": "640a1cebee82de265df86f63",
+    "rc_car": "6408b3104da28afa1e54036d",
     "rt_timeframe": {
-      "t_dayfrom": 20230309,
-      "t_dayuntil": 20230309,
-      "t_timefrom": 1200,  
-      "t_timeuntil": 1230
+      "t_dayfrom": 20230310,
+      "t_dayuntil": 20230310,
+      "t_timefrom": 800,  
+      "t_timeuntil": 860
     }
   }
 }
 
 ###
 #Reservation löschen
-PATCH  http://localhost:3000/parkingspots/cancelReservation
+PATCH http://localhost:3000/parkingspots/cancelReservation
 Content-Type: application/json
 
 {
@@ -235,16 +134,3 @@ Content-Type: application/json
     "r_id": "64088eb8ed78f7aa8cd1775e"
   }
 } 
-
-###
-# Reservations eines Parkingspots returnen
-POST http://localhost:3000/parkingspots/getParkingspotReservations
-Content-Type: application/json
-
-{
-  "p_id": "6409ee4ce1d5d71a792292f4"
-}
-
-###
-# Reservationen eines Users returnen
-GET http://localhost:3000/parkingspots/getReservations

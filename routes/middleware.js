@@ -62,4 +62,6 @@ const validateParkingspotInput = [
     next();
   },
 ];
+
+
 module.exports = { getUser, getCar, checkLogin, validateParkingspotInput};

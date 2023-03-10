@@ -7,6 +7,18 @@ const Parkingspot = require("../models/parkingspot");
 
 const { getUser, getCar, checkLogin } = require("./middleware");
 
+// define the middleware function
+const allowCrossDomain = function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+
+  next();
+};
+const app = express();
+// use the middleware function
+app.use(allowCrossDomain);
+
 
 // returns all users
 router.get("/", async (req, res) => {

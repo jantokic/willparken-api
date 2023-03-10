@@ -3,8 +3,11 @@ require('dotenv').config()
 const express = require('express')
 const session = require('express-session')
 const store = new session.MemoryStore()
-const app = express()
 const crypto = require('crypto')
+const cors = require('cors');
+const bodyParser = require('body-parser');
+
+const app = express()
 
 const logger = require('morgan');
 
@@ -25,6 +28,9 @@ const db = mongoose.connection
 
 db.on('error', (error) => console.error(error))
 db.once('open', () => console.log('Connected to Database.'))
+
+app.use(cors());
+app.use(bodyParser.json());
 
 app.use(logger('dev'));
 app.use(express.json())

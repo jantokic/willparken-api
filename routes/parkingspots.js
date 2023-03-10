@@ -15,6 +15,17 @@ const {
   validateParkingspotInput,
 } = require("./middleware");
 
+// define the middleware function
+const allowCrossDomain = function (req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET,PUT,POST,PATCH,DELETE");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  next();
+};
+const app = express();
+// use the middleware function
+app.use(allowCrossDomain);
+
 // returns all parkingspots
 router.get("/", async (req, res) => {
   try {
@@ -228,7 +239,7 @@ router.delete(
       if (!updatedParkingspot) {
         return res.status(404).json({ message: "Parkingspot not found." });
       }
-      
+
       // call the cancelPossibleReservations function, which cancels all reservations of the parkingspot
       response = await cancelPossibleReservations(req, res);
       cancelledCount = response.cancelledCount;

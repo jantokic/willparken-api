@@ -43,7 +43,7 @@ router.post(
     body("u_username").isLength({ min: 3 }),
     body("u_firstname").isLength({ min: 2 }),
     body("u_lastname").isLength({ min: 2 }),
-    body("u_password").isLength({ min: 8 }),
+    body("u_password").isLength({ min: 6 }),
   ],
   async (req, res) => {
     // Check for validation errors

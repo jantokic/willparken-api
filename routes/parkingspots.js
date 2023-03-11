@@ -139,7 +139,7 @@ setParkingspotInactive = async (req, res) => {
   let cancelledCount = 0;
   let remainingCount = 0;
   let activeReservations = [];
-  const furthestEnd = new Date();
+  let furthestEnd = new Date();
   try {
     // call the cancelPossibleReservations function, which cancels all reservations of the parkingspot
     // returns the number of cancelled and remaining reservations and an array of the active remaining reservations

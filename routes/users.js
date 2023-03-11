@@ -49,7 +49,7 @@ router.post(
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ message: errors.array() });
     }
 
     // check if user is already logged in
@@ -99,7 +99,7 @@ router.post(
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ message: errors.array() });
     }
 
     // check if user is already logged in

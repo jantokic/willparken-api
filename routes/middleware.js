@@ -44,6 +44,7 @@ const getCar = async (req, res, next) => {
 
 // Middleware for functions, to check if a user is logged in
 const checkLogin = async (req, res, next) => {
+  // print the cookies that are currently set
   if (req.session.u_id) {
     next();
   } else {

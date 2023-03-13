@@ -447,9 +447,9 @@ router.patch(
   async (req, res) => {
     try {
       const response = await cancelReservationFunc(req, res);
-      return res.status(response.status).json({ message: response.message }, { content: response.content });
+      res.status(response.status).json({ message: response.message });
     } catch (err) {
-      return res.status(500).json({ message: err.message });
+      res.status(500).json({ message: err.message });
     }
   }
 );

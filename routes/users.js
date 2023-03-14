@@ -182,6 +182,27 @@ router.delete("/delete", checkLogin, getUser, async (req, res) => {
   }
 });
 
+// add Money to user's balance
+router.post("/addMoney", checkLogin, getUser, async (req, res) => {
+  try {
+    if (!req.body.money) {
+      return res.status(400).json({ message: "money has not been sent." });
+    }
+    if (req.body.money <= 0) {
+      return res.status(400).json({ message: "Amount must be greater than 0." });
+    }
+    // add money to user's balance
+    res.user.u_balance += req.body.money;
+    // save changes in mongodb
+    const updatedUser = await res.user.save();
+    res
+      .status(201)
+      .json({ message: `${req.body.u_balance} € added successfully.`, content: updatedUser });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 // adds a car to the currently logged in user
 router.post("/addCar", checkLogin, getUser, async (req, res) => {
   // create car

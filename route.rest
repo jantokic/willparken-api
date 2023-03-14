@@ -54,6 +54,14 @@ Content-Type: application/json
 #User löschen
 DELETE http://localhost:3000/users/delete
 
+###
+#User Geld hinzufügen
+POST http://localhost:3000/users/addMoney
+Content-Type: application/json
+
+{
+  "money": 5
+}
 
 ###
 #Car hinzufügen

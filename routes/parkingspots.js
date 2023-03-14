@@ -279,11 +279,11 @@ router.delete(
 router.post("/search", async (req, res) => {
   try {
     const parkingspots = await Parkingspot.find({
-      "pa_address.a_country": req.body.pa_adress.a_country,
-      "pa_address.a_city": req.body.pa_adress.a_city,
-      "pa_address.a_zip": req.body.pa_adress.a_zip,
-      "pa_address.a_street": req.body.pa_adress.a_street,
-      "pa_address.a_houseno": req.body.pa_adress.a_houseno,
+      "pa_address.a_country": req.body.pa_address.a_country,
+      "pa_address.a_city": req.body.pa_address.a_city,
+      "pa_address.a_zip": req.body.pa_address.a_zip,
+      "pa_address.a_street": req.body.pa_address.a_street,
+      "pa_address.a_houseno": req.body.pa_address.a_houseno,
     });
     res
       .status(200)

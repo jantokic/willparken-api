@@ -1,9 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const { format, parse, isWithinInterval, differenceInMinutes } = require('date-fns');
-const axios = require('axios');
-const { body } = require("express-validator");
-
 
 const Parkingspot = require("../models/parkingspot");
 const User = require("../models/user");
@@ -389,7 +386,7 @@ router.post(
         reservation.r_critcanceltime = "h";
       }
 
-      // if the reservation is in less than a month, set reservation.r_critcanceltime to "d"
+y      // if the reservation is in less than a month, set reservation.r_critcanceltime to "d"
       if (timeLeft <= 43200 && timeLeft > 1440) {
         reservation.r_critcanceltime = "d";
       }
@@ -458,7 +455,11 @@ router.patch(
 cancelReservationFunc = async (req, res) => {
   // check if the parkingspot exists
   const parkingspot = await Parkingspot.findById(req.body.p_id);
-  if (!parkingspot) {
+  if (!parkingspot) {const updatedParkingspot = await Parkingspot.findByIdAndUpdate(
+    req.body.p_id,
+    req.body,
+    { new: true }
+  );
     console.log("Parkingspot not found.");
     return { status: 404, message: "Parkingspot not found." };
   }

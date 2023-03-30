@@ -37,6 +37,10 @@ app.use(cors({
         'https://localhost:8080',
         'http://localhost:3000',
         'https://localhost:3000',
+        'https://seal-app-jk939.ondigitalocean.app',
+        'https://seal-app-jk939.ondigitalocean.app/',
+        'https://willparken.live',
+        'https://willparken.live/',
     ],
     credentials: true,
     exposedHeaders: ['set-cookie']

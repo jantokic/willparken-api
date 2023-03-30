@@ -14,11 +14,11 @@ const logger = require('morgan');
 
 const mongoose = require('mongoose')
 mongoose.connect(
-    "mongodb+srv://cluster0.6ichmiz.mongodb.net/willparken",
+    process.env.DATABASE_URL,
     {
         authSource: "admin",
-        user: "admin",
-        pass: "admin",
+        user: process.env.DATABASE_USR,
+        pass: process.env.DATABASE_PWD,
         useNewUrlParser: true,
         useUnifiedTopology: true
     }
@@ -37,10 +37,6 @@ app.use(cors({
         'https://localhost:8080',
         'http://localhost:3000',
         'https://localhost:3000',
-        'https://seal-app-jk939.ondigitalocean.app',
-        'https://seal-app-jk939.ondigitalocean.app/',
-        'https://willparken.live',
-        'https://willparken.live/',
     ],
     credentials: true,
     exposedHeaders: ['set-cookie']
@@ -55,9 +51,9 @@ app.use(session({
     saveUninitialized: false,
     store,
     cookie: {
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-        sameSite: 'none',
-        secure: true,
+        maxAge: 1000 * 60 * 60 , // 1 hour
+        secure: false,
+        httpOnly: true,
     }
 }))
 const usersRouter = require('./routes/users')
@@ -67,5 +63,5 @@ app.use('/users', usersRouter)
 app.use('/parkingspots', parkingspotsRouter)
 
 
-app.listen(3000, () => console.log('Server Started.'))
+app.listen(process.env.API_PORT, () => console.log('Server Started.'))
 

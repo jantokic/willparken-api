@@ -14,11 +14,11 @@ const logger = require('morgan');
 
 const mongoose = require('mongoose')
 mongoose.connect(
-    process.env.DATABASE_URL,
+    "mongodb+srv://cluster0.6ichmiz.mongodb.net/willparken",
     {
         authSource: "admin",
-        user: process.env.DATABASE_USR,
-        pass: process.env.DATABASE_PWD,
+        user: "admin",
+        pass: "admin",
         useNewUrlParser: true,
         useUnifiedTopology: true
     }
@@ -62,5 +62,5 @@ app.use('/users', usersRouter)
 app.use('/parkingspots', parkingspotsRouter)
 
 
-app.listen(process.env.API_PORT, () => console.log('Server Started.'))
+app.listen(3000, () => console.log('Server Started.'))
 

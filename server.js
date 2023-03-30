@@ -55,8 +55,9 @@ app.use(session({
     saveUninitialized: false,
     store,
     cookie: {
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+        sameSite: 'none',
         secure: true,
-        maxAge: 1000 * 60 * 60 // 1 hour
     }
 }))
 const usersRouter = require('./routes/users')

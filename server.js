@@ -55,12 +55,13 @@ app.use(session({
     saveUninitialized: false,
     store,
     cookie: {
-        secure: false,
+        secure: true,
         maxAge: 1000 * 60 * 60 // 1 hour
     }
 }))
 const usersRouter = require('./routes/users')
 const parkingspotsRouter = require('./routes/parkingspots')
+const { default: isThisQuarter } = require('date-fns/isThisQuarter')
 app.use('/users', usersRouter)
 app.use('/parkingspots', parkingspotsRouter)
 

@@ -3,16 +3,15 @@
 GET http://localhost:3000/users
 
 ###
-#Alle Parkplätze aller User returnen
-GET http://localhost:3000/users/parkingspots
+#Alle Parkingspots returnen
+GET http://localhost:3000/parkingspots
+
+
+### USER ROUTEN ###
 
 ###
-#User mit bestimmter ID returnen
-GET http://localhost:3000/users/6394c71c516627872de28e0a
-
-###
-#Parkplätze eines User mit bestimmter ID returnen
-GET http://localhost:3000/users/639b696b0bce366d17be96c3/parkingspots
+#derzeit eingeloggten User returnen
+GET http://localhost:3000/users/getUser
 
 ###
 #User registrieren
@@ -24,7 +23,7 @@ Content-Type: application/json
   "u_username": "saidov-arb",
   "u_firstname": "arbi",
   "u_lastname": "saidov",
-  "u_password": "password"
+  "u_password": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
 }
 
 ###
@@ -32,79 +31,228 @@ Content-Type: application/json
 POST http://localhost:3000/users/login
 Content-Type: application/json
 
-{
+
+{ 
   "u_username": "saidov-arb",
-  "u_password": "password"
+  "u_password": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
 }
 
 ###
-#User einen Parkplatz hinzufügen
-POST http://localhost:3000/users/639b75dd7e0e9d6b008c6d49/parkingspots/create
-Content-Type: application/json
-
-{
-  "p_number": 1,
-  "p_availablefrom": "Sunday - 08:00",
-  "p_availableuntil": "Sunday - 12:00",
-  "p_priceperhour": 20,
-  "pa_address": {
-    "a_country": "Austria",
-    "a_city": "Wels",
-    "a_zip": "4600",
-    "a_address1": "Handel-Mazzetti-Strasse",
-    "a_address2": "187"
-  }
-}
-
-###
-#User erstellen
-POST http://localhost:3000/users
-Content-Type: application/json
-
-{
-  "u_email": "arbi.saidov@htl-wels.at",
-  "u_username": "saidov-arb",
-  "u_firstname": "arbi",
-  "u_lastname": "saidov",
-  "u_password": "password",
-  "uc_cars": [
-    {
-      "c_brand": "Audi",
-      "c_model": "R8",
-      "c_licenceplate": "WE3L444"
-    },
-    {
-      "c_brand": "BMW",
-      "c_model": "336",
-      "c_licenceplate": "WE5L336"
-    }
-  ],
-  "up_parkingspots": [
-    {
-      "p_number": 1,
-      "p_availablefrom": "Sunday - 10:00",
-      "p_availableuntil": "Sunday - 20:00",
-      "p_priceperhour": 10,
-      "pa_address": {
-        "a_country": "Austria",
-        "a_city": "Wels",
-        "a_zip": "4600",
-        "a_address1": "Fischergasse",
-        "a_address2": "30"
-      }
-    }
-  ]
-}
-
-###
-#User löschen
-DELETE http://localhost:3000/users/639b6aa67f9f4f9d05f20d78
+#User ausloggen
+GET http://localhost:3000/users/logout
 
 ###
 #User aktualisieren
-PATCH http://localhost:3000/users/6394c71c516627872de28e0a
+PATCH http://localhost:3000/users/update
 Content-Type: application/json
 
 {
   "u_password": "newpassword"
 }
+
+###
+#User löschen
+DELETE http://localhost:3000/users/delete
+
+###
+#User Geld hinzufügen
+POST http://localhost:3000/users/addMoney
+Content-Type: application/json
+
+{
+  "money": 5
+}
+
+###
+#Car hinzufügen
+POST http://localhost:3000/users/addCar
+Content-Type: application/json
+
+{
+  "c_car": {
+    "c_brand": "Audi",
+    "c_model": "R8",
+    "c_licenceplate": "WE3L444"
+  }
+}
+
+###
+#Car aktualisieren
+PATCH http://localhost:3000/users/updateCar
+Content-Type: application/json
+
+{
+  "c_car": {
+    "c_id": "6407576c4eb96fde2d6689c8",
+    "c_brand": "BMW",
+    "c_model": "M3"
+  }
+}
+
+###
+#Car löschen
+DELETE http://localhost:3000/users/deleteCar
+Content-Type: application/json
+
+{
+  "c_car": {
+    "c_id": "640870af723d7c901b96b844"
+  }
+}
+
+
+###
+# Bestimmtes Car eines Users returnen
+POST http://localhost:3000/users/getCar
+Content-Type: application/json
+
+{
+  "c_car": {
+    "c_id": "6407b64b63e0b13c14017741"
+  }
+}
+
+###
+#Alle Cars eines Users returnen
+GET http://localhost:3000/users/getCars
+
+
+
+### PARKINGSPOT ROUTEN ###
+
+###
+#Parkingspot hinzufügen
+POST http://localhost:3000/parkingspots/add
+Content-Type: application/json
+
+{
+  "p_number": "3",
+  "p_priceperhour": 10,
+  "p_tags": [
+    "Test"
+  ],
+  "pt_availability": {
+    "t_weekday": [6,7],
+    "t_dayfrom": 20230101,
+    "t_dayuntil": 20230330,
+    "t_timefrom": 480,
+    "t_timeuntil": 960
+  },
+  "pr_reservations": [],
+  "pa_address": {
+    "a_country": "Austria",
+    "a_city": "Wels",
+    "a_zip": "4600",
+    "a_street": "Fischergasse",
+    "a_houseno": "30"
+  }
+}
+
+###
+#Parkingspot aktualisieren
+PATCH http://localhost:3000/parkingspots/update
+Content-Type: application/json
+
+{
+  "p_id": "640e54c12d4841637ee7b55f",
+  "p_number": "3",
+  "p_priceperhour": 10,
+  "p_tags": [
+    "Ladestation"
+  ],
+  "p_status": "inactive",
+  "pt_availability": {
+    "t_weekday": [6,7],
+    "t_dayfrom": 20230101,
+    "t_dayuntil": 20230330,
+    "t_timefrom": 480,
+    "t_timeuntil": 960
+  },
+  "pa_address": {
+    "a_country": "Austria",
+    "a_city": "Wels",
+    "a_zip": "4600",
+    "a_street": "Fischergasse",
+    "a_houseno": "30"
+  }
+}
+
+###
+#Parkingspot löschen
+DELETE http://localhost:3000/parkingspots/delete
+Content-Type: application/json
+
+{
+  "p_id": "640a1cf2ee82de265df86f65"
+}
+
+###
+#Parkplatz suchen
+POST http://localhost:3000/parkingspots/search
+Content-Type: application/json
+
+{
+  "pa_address": {
+    "a_country": "Austria",
+    "a_city": "Wels",
+    "a_zip": "4600",
+    "a_street": "Fischergasse"
+  }
+}
+
+###
+# Bestimmten Parkingspot returnen
+POST http://localhost:3000/parkingspots/getParkingspot
+Content-Type: application/json
+
+{
+  "p_id": "6409e64f2a6e8d1dc5ed1cb0"
+}
+
+
+###
+# Alle Parkingspots eines Users returnen
+GET http://localhost:3000/parkingspots/getParkingspots
+
+###
+#Reservation hinzufügen
+POST http://localhost:3000/parkingspots/makeReservation
+Content-Type: application/json
+
+{
+  "p_id": "640e54c12d4841637ee7b55f",
+  "pr_reservation": {
+    "rc_car": "640e54bc2d4841637ee7b55d",
+    "rt_timeframe": {
+      "t_dayfrom": 20230410,
+      "t_dayuntil": 20230410,
+      "t_timefrom": 1200,  
+      "t_timeuntil": 1230
+    }
+  }
+}
+
+###
+#Reservation löschen
+PATCH  http://localhost:3000/parkingspots/cancelReservation
+Content-Type: application/json
+
+{
+  "p_id": "640e4d406bbd2552629c49b3",
+  "pr_reservation": {
+    "r_id": "640e4d496bbd2552629c49bb"
+  }
+} 
+
+###
+# Reservations eines Parkingspots returnen
+POST http://localhost:3000/parkingspots/getParkingspotReservations
+Content-Type: application/json
+
+{
+  "p_id": "6409ee4ce1d5d71a792292f4"
+}
+
+###
+# Reservationen eines Users returnen
+GET http://localhost:3000/parkingspots/getReservations
